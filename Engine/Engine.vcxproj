@@ -48,6 +48,7 @@
   </ItemGroup>
   <ItemGroup>
     <None Include="WorkingDir\shaders.glsl" />
+    <None Include="WorkingDir\shaders2.glsl" />
   </ItemGroup>
   <PropertyGroup Label="Globals">
     <VCProjectVersion>16.0</VCProjectVersion>
