@@ -62,6 +62,7 @@ struct App
 
     // program indices
     u32 texturedGeometryProgramIdx;
+    u32 patriceGeoProgramIdx;
     
     // texture indices
     u32 diceTexIdx;

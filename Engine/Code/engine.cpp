@@ -10,6 +10,31 @@
 #include <stb_image.h>
 #include <stb_image_write.h>
 
+struct VertexBufferAttribute
+{
+    u8 location;
+    u8 componentCount;
+    u8 offset;
+};
+
+struct VertexBufferLayout
+{
+    std::vector<VertexBufferAttribute> attributes;
+    u8 stride;
+};
+
+struct VertexShaderAttribute 
+{
+    u8 location;
+    u8 componentCount;
+};
+
+struct Vao
+{
+    GLuint handle;
+    GLuint programHandle;
+};
+
 GLuint CreateProgramFromSource(String programSource, const char* shaderName)
 {
     GLchar  infoLogBuffer[1024] = {};
@@ -218,8 +243,32 @@ void Init(App* app)
     glBindBuffer(GL_ELEMENT_ARRAY_BUFFER,app->embeddedElements);
 
     app->texturedGeometryProgramIdx = LoadProgram(app,"shaders.glsl","TEXTURED_GEOMETRY");
-    Program& texturedGeometryProgram = app->programs[app->texturedGeometryProgramIdx];
+    //Program& texturedGeometryProgram = app->programs[app->texturedGeometryProgramIdx];
+    //app->patriceGeoProgramIdx = LoadProgram(app, "shaders2.glsl", "TEXTURED_PATRICE");
+    Program& texturedGeometryProgram = app->programs[app->patriceGeoProgramIdx];
     app->programUniformTexture = glGetUniformLocation(texturedGeometryProgram.handle,"uTexture");
+
+    /*char attributeName[128];
+    int attributeNameLength;
+    int attributeSize;
+    GLenum attributeType;
+    int attributeCount;
+    int offset = 0;
+    int attributeLocation;
+    glGetProgramiv(texturedGeometryProgram.handle, GL_ACTIVE_ATTRIBUTES, &attributeCount);
+    for (int i = 0; i < attributeCount; ++i) {
+        glGetActiveAttrib(texturedGeometryProgram.handle, i, ARRAY_COUNT(attributeName),
+            &attributeNameLength,
+            &attributeSize,
+            &attributeType,
+            attributeName);
+
+        attributeLocation = glGetAttribLocation(texturedGeometryProgram.handle, attributeName);
+
+        glVertexAttribPointer(attributeLocation, attributeSize, attributeType, GL_FALSE, stride????, ((void*)offset));
+        offset += attributeSize;
+        glEnableVertexAttribArray(i);
+    }*/
 
     app->diceTexIdx = LoadTexture2D(app, "dice.png");
     app->whiteTexIdx = LoadTexture2D(app, "color_white.png");
