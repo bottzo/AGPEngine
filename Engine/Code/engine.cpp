@@ -6,34 +6,10 @@
 //
 
 #include "engine.h"
+#include "assimp_model_loading.h"
 #include <imgui.h>
 #include <stb_image.h>
 #include <stb_image_write.h>
-
-struct VertexBufferAttribute
-{
-    u8 location;
-    u8 componentCount;
-    u8 offset;
-};
-
-struct VertexBufferLayout
-{
-    std::vector<VertexBufferAttribute> attributes;
-    u8 stride;
-};
-
-struct VertexShaderAttribute 
-{
-    u8 location;
-    u8 componentCount;
-};
-
-struct Vao
-{
-    GLuint handle;
-    GLuint programHandle;
-};
 
 GLuint CreateProgramFromSource(String programSource, const char* shaderName)
 {
@@ -201,6 +177,57 @@ u32 LoadTexture2D(App* app, const char* filepath)
     {
         return UINT32_MAX;
     }
+}
+
+void LoadTexturesQuad(App* app)
+{
+    const float vertices[] = {
+    -0.5,-0.5,0.0,0.0,0.0,
+    0.5,-0.5,0.0,1.0,0.0,
+    0.5,0.5,0.0,1.0,1.0,
+    -0.5,0.5,0.0,0.0,1.0
+    };
+
+    const unsigned short indices[] = {
+        0,1,2,0,2,3
+    };
+
+    glGenBuffers(1, &app->embeddedVertices);
+    glBindBuffer(GL_ARRAY_BUFFER, app->embeddedVertices);
+    int a = sizeof(vertices);
+    glBufferData(GL_ARRAY_BUFFER, sizeof(vertices), vertices, GL_STATIC_DRAW);
+    //glBindBuffer(GL_ARRAY_BUFFER,0);
+
+    glGenBuffers(1, &app->embeddedElements);
+    glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, app->embeddedElements);
+    glBufferData(GL_ELEMENT_ARRAY_BUFFER, sizeof(indices), indices, GL_STATIC_DRAW);
+    glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, 0);
+
+    glGenVertexArrays(1, &app->vao);
+    glBindVertexArray(app->vao);
+    glBindBuffer(GL_ARRAY_BUFFER, app->embeddedVertices);
+    glVertexAttribPointer(0,3, GL_FLOAT, GL_FALSE,sizeof(float)*5,(void*)0);
+    glEnableVertexAttribArray(0);
+    glVertexAttribPointer(1,2,GL_FLOAT,GL_FALSE,sizeof(float)*5,(void*)12);
+    glEnableVertexAttribArray(1);
+    glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, app->embeddedElements);
+
+    app->texturedGeometryProgramIdx = LoadProgram(app, "shaders.glsl", "TEXTURED_GEOMETRY");
+    Program& texturedGeometryProgram = app->programs[app->patriceGeoProgramIdx];
+    app->programUniformTexture = glGetUniformLocation(texturedGeometryProgram.handle, "uTexture");
+
+    app->diceTexIdx = LoadTexture2D(app, "dice.png");
+    app->whiteTexIdx = LoadTexture2D(app, "color_white.png");
+    app->blackTexIdx = LoadTexture2D(app, "color_black.png");
+    app->normalTexIdx = LoadTexture2D(app, "color_normal.png");
+    app->magentaTexIdx = LoadTexture2D(app, "color_magenta.png");
+
+    //app->mode = Mode_TexturedQuad;
+}
+
+void LoadPatrik(App* app)
+{
+    LoadModel(app, "Patrik/Patrick.obj");
 }
 
 void Init(App* app)

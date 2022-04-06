@@ -90,7 +90,7 @@ void LogString(const char* str);
 #define ILOG(...)                 \
 {                                 \
 char logBuffer[1024] = {};        \
-sprintf(logBuffer, __VA_ARGS__);  \
+sprintf_s(logBuffer, __VA_ARGS__);  \
 LogString(logBuffer);             \
 }
 
