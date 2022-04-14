@@ -213,7 +213,7 @@ void LoadTexturesQuad(App* app)
     glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, app->embeddedElements);
 
     app->texturedGeometryProgramIdx = LoadProgram(app, "shaders.glsl", "TEXTURED_GEOMETRY");
-    Program& texturedGeometryProgram = app->programs[app->patriceGeoProgramIdx];
+    Program& texturedGeometryProgram = app->programs.back();
     app->programUniformTexture = glGetUniformLocation(texturedGeometryProgram.handle, "uTexture");
 
     app->diceTexIdx = LoadTexture2D(app, "dice.png");
@@ -227,56 +227,15 @@ void LoadTexturesQuad(App* app)
 
 void LoadPatrik(App* app)
 {
-    LoadModel(app, "Patrik/Patrick.obj");
-}
+    u32 modelAppIdx = LoadModel(app, "Patrick/Patrick.obj");
+    u32 AppProgramIdx = LoadProgram(app, "shaders2.glsl", "TEXTURED_PATRICE");
 
-void Init(App* app)
-{
-    // TODO: Initialize your resources here!
-    // - vertex buffers
-    // - element/index buffers
-    // - vaos
-    // - programs (and retrieve uniform indices)
-    // - textures
-    const float vertices[] = {
-        -0.5,-0.5,0.0,0.0,0.0,
-        0.5,-0.5,0.0,1.0,0.0,
-        0.5,0.5,0.0,1.0,1.0,
-        -0.5,0.5,0.0,0.0,1.0
-    };
+    Program& program = app->programs[AppProgramIdx];
+    app->programUniformTexture = glGetUniformLocation(program.handle, "uTexture");
 
-    const unsigned short indices[] = {
-        0,1,2,0,2,3
-    };
-
-    glGenBuffers(1,&app->embeddedVertices);
-    glBindBuffer(GL_ARRAY_BUFFER,app->embeddedVertices);
-    int a = sizeof(vertices);
-    glBufferData(GL_ARRAY_BUFFER,sizeof(vertices),vertices,GL_STATIC_DRAW);
-    //glBindBuffer(GL_ARRAY_BUFFER,0);
-
-    glGenBuffers(1,&app->embeddedElements);
-    glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, app->embeddedElements);
-    glBufferData(GL_ELEMENT_ARRAY_BUFFER,sizeof(indices),indices,GL_STATIC_DRAW);
-    glBindBuffer(GL_ELEMENT_ARRAY_BUFFER,0);
-
-    glGenVertexArrays(1,&app->vao);
-    glBindVertexArray(app->vao);
-    glBindBuffer(GL_ARRAY_BUFFER, app->embeddedVertices);
-    //glVertexAttribPointer(0,3, GL_FLOAT, GL_FALSE,sizeof(float)*5,(void*)0);
-    //glEnableVertexAttribArray(0);
-    //glVertexAttribPointer(1,2,GL_FLOAT,GL_FALSE,sizeof(float)*5,(void*)12);
-    //glEnableVertexAttribArray(1);
-    glBindBuffer(GL_ELEMENT_ARRAY_BUFFER,app->embeddedElements);
-
-    app->texturedGeometryProgramIdx = LoadProgram(app,"shaders.glsl","TEXTURED_GEOMETRY");
-    //Program& texturedGeometryProgram = app->programs[app->texturedGeometryProgramIdx];
-    //app->patriceGeoProgramIdx = LoadProgram(app, "shaders2.glsl", "TEXTURED_PATRICE");
-    Program& texturedGeometryProgram = app->programs[app->patriceGeoProgramIdx];
-    app->programUniformTexture = glGetUniformLocation(texturedGeometryProgram.handle,"uTexture");
 
     int maxVariableNameLength;
-    glGetProgramiv(texturedGeometryProgram.handle, GL_ACTIVE_ATTRIBUTE_MAX_LENGTH, &maxVariableNameLength);
+    glGetProgramiv(program.handle, GL_ACTIVE_ATTRIBUTE_MAX_LENGTH, &maxVariableNameLength);
     char* attributeName = new char[maxVariableNameLength];
     int attributeNameLength;
     int attributeSize;
@@ -287,16 +246,16 @@ void Init(App* app)
     int attributeCount;
     int offset = 0;
     int attributeLocation;
-    glGetProgramiv(texturedGeometryProgram.handle, GL_ACTIVE_ATTRIBUTES, &attributeCount);
+    glGetProgramiv(program.handle, GL_ACTIVE_ATTRIBUTES, &attributeCount);
     for (int i = 0; i < attributeCount; ++i) {
-        glGetActiveAttrib(texturedGeometryProgram.handle, i, /*ARRAY_COUNT(attributeName)*/maxVariableNameLength,
+        glGetActiveAttrib(program.handle, i, /*ARRAY_COUNT(attributeName)*/maxVariableNameLength,
             &attributeNameLength,
             &attributeSize,
             &attributeType,
             attributeName);
-    
-        attributeLocation = glGetAttribLocation(texturedGeometryProgram.handle, attributeName);
-    
+
+        attributeLocation = glGetAttribLocation(program.handle, attributeName);
+
         //careful with the stride!!!!
         switch (attributeType)
         {
@@ -310,16 +269,16 @@ void Init(App* app)
             usableAttributeType = GL_FLOAT;
             usableAttributeSize = 2;
             break;
-         case GL_FLOAT_VEC3:
-             attributteByteSize = sizeof(float) * 3 * attributeSize;
-             usableAttributeType = GL_FLOAT;
-             usableAttributeSize = 3;
+        case GL_FLOAT_VEC3:
+            attributteByteSize = sizeof(float) * 3 * attributeSize;
+            usableAttributeType = GL_FLOAT;
+            usableAttributeSize = 3;
             break;
-         case GL_FLOAT_MAT2:
-         case GL_FLOAT_VEC4:
-             attributteByteSize = sizeof(float) * 4 * attributeSize;
-             usableAttributeType = GL_FLOAT;
-             usableAttributeSize = 4;
+        case GL_FLOAT_MAT2:
+        case GL_FLOAT_VEC4:
+            attributteByteSize = sizeof(float) * 4 * attributeSize;
+            usableAttributeType = GL_FLOAT;
+            usableAttributeSize = 4;
             break;
         case GL_FLOAT_MAT3:
             attributteByteSize = sizeof(float) * 9 * attributeSize;
@@ -355,7 +314,7 @@ void Init(App* app)
             usableAttributeSize = 1;
             break;
         case GL_INT_VEC2:
-            attributteByteSize = sizeof(int) * 2 *attributeSize;
+            attributteByteSize = sizeof(int) * 2 * attributeSize;
             usableAttributeType = GL_INT;
             usableAttributeSize = 2;
             break;
@@ -443,19 +402,246 @@ void Init(App* app)
             ELOG("Error: Unknown type of program attribute");
         }
         //TODO: stride
-        glVertexAttribPointer(attributeLocation, usableAttributeSize, usableAttributeType, GL_FALSE, sizeof(float) * 5, ((void*)offset));
+        //glVertexAttribPointer(attributeLocation, usableAttributeSize, usableAttributeType, GL_FALSE, sizeof(float) * 5, ((void*)offset));
         offset += attributteByteSize;
-        glEnableVertexAttribArray(i);
+        //glEnableVertexAttribArray(i);
+
+        //location + component count
+        program.vertexInputLayout.attributes.push_back({(u8)attributeLocation,(u8)usableAttributeSize});
     }
     delete[] attributeName;
 
-    app->diceTexIdx = LoadTexture2D(app, "dice.png");
-    app->whiteTexIdx = LoadTexture2D(app, "color_white.png");
-    app->blackTexIdx = LoadTexture2D(app, "color_black.png");
-    app->normalTexIdx= LoadTexture2D(app, "color_normal.png");
-    app->magentaTexIdx = LoadTexture2D(app, "color_magenta.png");
+    app->mode = Mode_Patrick;
+}
 
-    app->mode = Mode_TexturedQuad;
+void Init(App* app)
+{
+    // TODO: Initialize your resources here!
+    // - vertex buffers
+    // - element/index buffers
+    // - vaos
+    // - programs (and retrieve uniform indices)
+    // - textures
+
+    //const float vertices[] = {
+    //    -0.5,-0.5,0.0,0.0,0.0,
+    //    0.5,-0.5,0.0,1.0,0.0,
+    //    0.5,0.5,0.0,1.0,1.0,
+    //    -0.5,0.5,0.0,0.0,1.0
+    //};
+    //
+    //const unsigned short indices[] = {
+    //    0,1,2,0,2,3
+    //};
+    //
+    //glGenBuffers(1,&app->embeddedVertices);
+    //glBindBuffer(GL_ARRAY_BUFFER,app->embeddedVertices);
+    //int a = sizeof(vertices);
+    //glBufferData(GL_ARRAY_BUFFER,sizeof(vertices),vertices,GL_STATIC_DRAW);
+    ////glBindBuffer(GL_ARRAY_BUFFER,0);
+    //
+    //glGenBuffers(1,&app->embeddedElements);
+    //glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, app->embeddedElements);
+    //glBufferData(GL_ELEMENT_ARRAY_BUFFER,sizeof(indices),indices,GL_STATIC_DRAW);
+    //glBindBuffer(GL_ELEMENT_ARRAY_BUFFER,0);
+    //
+    //glGenVertexArrays(1,&app->vao);
+    //glBindVertexArray(app->vao);
+    //glBindBuffer(GL_ARRAY_BUFFER, app->embeddedVertices);
+    ////glVertexAttribPointer(0,3, GL_FLOAT, GL_FALSE,sizeof(float)*5,(void*)0);
+    ////glEnableVertexAttribArray(0);
+    ////glVertexAttribPointer(1,2,GL_FLOAT,GL_FALSE,sizeof(float)*5,(void*)12);
+    ////glEnableVertexAttribArray(1);
+    //glBindBuffer(GL_ELEMENT_ARRAY_BUFFER,app->embeddedElements);
+    //
+    //app->texturedGeometryProgramIdx = LoadProgram(app,"shaders.glsl","TEXTURED_GEOMETRY");
+    ////Program& texturedGeometryProgram = app->programs[app->texturedGeometryProgramIdx];
+    ////app->patriceGeoProgramIdx = LoadProgram(app, "shaders2.glsl", "TEXTURED_PATRICE");
+    //Program& texturedGeometryProgram = app->programs.back();
+    //app->programUniformTexture = glGetUniformLocation(texturedGeometryProgram.handle,"uTexture");
+    //
+    //int maxVariableNameLength;
+    //glGetProgramiv(texturedGeometryProgram.handle, GL_ACTIVE_ATTRIBUTE_MAX_LENGTH, &maxVariableNameLength);
+    //char* attributeName = new char[maxVariableNameLength];
+    //int attributeNameLength;
+    //int attributeSize;
+    //int attributteByteSize;
+    //int usableAttributeSize;
+    //GLenum usableAttributeType;
+    //GLenum attributeType;
+    //int attributeCount;
+    //int offset = 0;
+    //int attributeLocation;
+    //glGetProgramiv(texturedGeometryProgram.handle, GL_ACTIVE_ATTRIBUTES, &attributeCount);
+    //for (int i = 0; i < attributeCount; ++i) {
+    //    glGetActiveAttrib(texturedGeometryProgram.handle, i, /*ARRAY_COUNT(attributeName)*/maxVariableNameLength,
+    //        &attributeNameLength,
+    //        &attributeSize,
+    //        &attributeType,
+    //        attributeName);
+    //
+    //    attributeLocation = glGetAttribLocation(texturedGeometryProgram.handle, attributeName);
+    //
+    //    //careful with the stride!!!!
+    //    switch (attributeType)
+    //    {
+    //    case GL_FLOAT:
+    //        attributteByteSize = sizeof(float) * attributeSize;
+    //        usableAttributeType = GL_FLOAT;
+    //        usableAttributeSize = 1;
+    //        break;
+    //    case GL_FLOAT_VEC2:
+    //        attributteByteSize = sizeof(float) * 2 * attributeSize;
+    //        usableAttributeType = GL_FLOAT;
+    //        usableAttributeSize = 2;
+    //        break;
+    //     case GL_FLOAT_VEC3:
+    //         attributteByteSize = sizeof(float) * 3 * attributeSize;
+    //         usableAttributeType = GL_FLOAT;
+    //         usableAttributeSize = 3;
+    //        break;
+    //     case GL_FLOAT_MAT2:
+    //     case GL_FLOAT_VEC4:
+    //         attributteByteSize = sizeof(float) * 4 * attributeSize;
+    //         usableAttributeType = GL_FLOAT;
+    //         usableAttributeSize = 4;
+    //        break;
+    //    case GL_FLOAT_MAT3:
+    //        attributteByteSize = sizeof(float) * 9 * attributeSize;
+    //        usableAttributeType = GL_FLOAT;
+    //        usableAttributeSize = 9;
+    //        break;
+    //    case GL_FLOAT_MAT4:
+    //        attributteByteSize = sizeof(float) * 16 * attributeSize;
+    //        usableAttributeType = GL_FLOAT;
+    //        usableAttributeSize = 16;
+    //        break;
+    //    case GL_FLOAT_MAT2x3:
+    //    case GL_FLOAT_MAT3x2:
+    //        attributteByteSize = sizeof(float) * 6 * attributeSize;
+    //        usableAttributeType = GL_FLOAT;
+    //        usableAttributeSize = 6;
+    //        break;
+    //    case GL_FLOAT_MAT2x4:
+    //    case GL_FLOAT_MAT4x2:
+    //        attributteByteSize = sizeof(float) * 8 * attributeSize;
+    //        usableAttributeType = GL_FLOAT;
+    //        usableAttributeSize = 8;
+    //        break;
+    //    case GL_FLOAT_MAT3x4:
+    //    case GL_FLOAT_MAT4x3:
+    //        attributteByteSize = sizeof(float) * 12 * attributeSize;
+    //        usableAttributeType = GL_FLOAT;
+    //        usableAttributeSize = 12;
+    //        break;
+    //    case GL_INT:
+    //        attributteByteSize = sizeof(int) * attributeSize;
+    //        usableAttributeType = GL_INT;
+    //        usableAttributeSize = 1;
+    //        break;
+    //    case GL_INT_VEC2:
+    //        attributteByteSize = sizeof(int) * 2 *attributeSize;
+    //        usableAttributeType = GL_INT;
+    //        usableAttributeSize = 2;
+    //        break;
+    //    case GL_INT_VEC3:
+    //        attributteByteSize = sizeof(int) * 3 * attributeSize;
+    //        usableAttributeType = GL_INT;
+    //        usableAttributeSize = 3;
+    //        break;
+    //    case GL_INT_VEC4:
+    //        attributteByteSize = sizeof(int) * 4 * attributeSize;
+    //        usableAttributeType = GL_INT;
+    //        usableAttributeSize = 4;
+    //        break;
+    //    case GL_UNSIGNED_INT:
+    //        attributteByteSize = sizeof(unsigned int) * attributeSize;
+    //        usableAttributeType = GL_UNSIGNED_INT;
+    //        usableAttributeSize = 1;
+    //        break;
+    //    case GL_UNSIGNED_INT_VEC2:
+    //        attributteByteSize = sizeof(unsigned int) * 2 * attributeSize;
+    //        usableAttributeType = GL_UNSIGNED_INT;
+    //        usableAttributeSize = 2;
+    //        break;
+    //    case GL_UNSIGNED_INT_VEC3:
+    //        attributteByteSize = sizeof(unsigned int) * 3 * attributeSize;
+    //        usableAttributeType = GL_UNSIGNED_INT;
+    //        usableAttributeSize = 2;
+    //        break;
+    //    case GL_UNSIGNED_INT_VEC4:
+    //        attributteByteSize = sizeof(unsigned int) * 4 * attributeSize;
+    //        usableAttributeType = GL_UNSIGNED_INT;
+    //        usableAttributeSize = 4;
+    //        break;
+    //    case GL_DOUBLE:
+    //        attributteByteSize = sizeof(double) * attributeSize;
+    //        usableAttributeType = GL_DOUBLE;
+    //        usableAttributeSize = 1;
+    //        break;
+    //    case GL_DOUBLE_VEC2:
+    //        attributteByteSize = sizeof(double) * 2 * attributeSize;
+    //        usableAttributeType = GL_DOUBLE;
+    //        usableAttributeSize = 2;
+    //        break;
+    //    case GL_DOUBLE_VEC3:
+    //        attributteByteSize = sizeof(double) * 3 * attributeSize;
+    //        usableAttributeType = GL_DOUBLE;
+    //        usableAttributeSize = 3;
+    //        break;
+    //    case GL_DOUBLE_MAT2:
+    //    case GL_DOUBLE_VEC4:
+    //        attributteByteSize = sizeof(double) * 4 * attributeSize;
+    //        usableAttributeType = GL_DOUBLE;
+    //        usableAttributeSize = 4;
+    //        break;
+    //    case GL_DOUBLE_MAT3:
+    //        attributteByteSize = sizeof(double) * 9 * attributeSize;
+    //        usableAttributeType = GL_DOUBLE;
+    //        usableAttributeSize = 9;
+    //        break;
+    //    case GL_DOUBLE_MAT4:
+    //        attributteByteSize = sizeof(double) * 16 * attributeSize;
+    //        usableAttributeType = GL_DOUBLE;
+    //        usableAttributeSize = 16;
+    //        break;
+    //    case GL_DOUBLE_MAT2x3:
+    //    case GL_DOUBLE_MAT3x2:
+    //        attributteByteSize = sizeof(double) * 6 * attributeSize;
+    //        usableAttributeType = GL_DOUBLE;
+    //        usableAttributeSize = 6;
+    //        break;
+    //    case GL_DOUBLE_MAT2x4:
+    //    case GL_DOUBLE_MAT4x2:
+    //        attributteByteSize = sizeof(double) * 8 * attributeSize;
+    //        usableAttributeType = GL_DOUBLE;
+    //        usableAttributeSize = 8;
+    //        break;
+    //    case GL_DOUBLE_MAT3x4:
+    //    case GL_DOUBLE_MAT4x3:
+    //        attributteByteSize = sizeof(double) * 12 * attributeSize;
+    //        usableAttributeType = GL_DOUBLE;
+    //        usableAttributeSize = 12;
+    //        break;
+    //    default:
+    //        //TODO: what if we fail???
+    //        ELOG("Error: Unknown type of program attribute");
+    //    }
+    //    //TODO: stride
+    //    glVertexAttribPointer(attributeLocation, usableAttributeSize, usableAttributeType, GL_FALSE, sizeof(float) * 5, ((void*)offset));
+    //    offset += attributteByteSize;
+    //    glEnableVertexAttribArray(i);
+    //}
+    //delete[] attributeName;
+    //
+    //app->diceTexIdx = LoadTexture2D(app, "dice.png");
+    //app->whiteTexIdx = LoadTexture2D(app, "color_white.png");
+    //app->blackTexIdx = LoadTexture2D(app, "color_black.png");
+    //app->normalTexIdx= LoadTexture2D(app, "color_normal.png");
+    //app->magentaTexIdx = LoadTexture2D(app, "color_magenta.png");
+    //
+    //app->mode = Mode_TexturedQuad;
+    LoadPatrik(app);
 }
 
 void Gui(App* app)
@@ -468,6 +654,43 @@ void Gui(App* app)
 void Update(App* app)
 {
     // You can handle app->input keyboard/mouse here
+}
+
+GLuint FindVAO(Mesh& mesh, u32 submeshIndex, const Program& program) {
+    Submesh& submesh = mesh.submeshes[submeshIndex];
+    for (u32 i = 0; i < (u32)submesh.vaos.size(); ++i)
+    {
+        if (submesh.vaos[i].programHandle == program.handle)
+            return submesh.vaos[i].handle;
+    }      GLuint vaoHandle = 0;
+    //Create a Vao
+    glGenVertexArrays(1, &vaoHandle);
+    glBindVertexArray(vaoHandle);
+    glBindBuffer(GL_ARRAY_BUFFER, mesh.vertexBufferHandle);
+    glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, mesh.indexBufferHandle);
+    for (u32 i = 0; i < program.vertexInputLayout.attributes.size(); ++i)
+    {
+        bool attributeWasLinked = false;
+        for (u32 j = 0; j < submesh.vertexBufferLayout.attributes.size(); ++j)
+        {
+            if (program.vertexInputLayout.attributes[i].location == submesh.vertexBufferLayout.attributes[j].location)
+            {
+                const u32 index = submesh.vertexBufferLayout.attributes[j].location;
+                const u32 ncomp = submesh.vertexBufferLayout.attributes[j].componentCount;
+                const u32 offset = submesh.vertexBufferLayout.attributes[j].offset + submesh.vertexOffset;
+                const u32 stride = submesh.vertexBufferLayout.stride;
+                glVertexAttribPointer(index, ncomp, GL_FLOAT, GL_FALSE, stride, (void*)(u64)offset);
+                glEnableVertexAttribArray(index);
+                attributeWasLinked = true;
+                break;
+            }
+        }
+        assert(attributeWasLinked);
+    }
+    glBindVertexArray(0);
+    Vao vao = { vaoHandle, program.handle };
+    submesh.vaos.push_back(vao);
+    return vaoHandle;
 }
 
 void Render(App* app)
@@ -507,6 +730,31 @@ void Render(App* app)
                 glBindVertexArray(0);
                 glUseProgram(0);
 
+            }
+            break;
+        case Mode_Patrick:
+            {
+                glClearColor(0.1f, 0.1f, 0.1f, 1.0f);
+                glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+                glViewport(0, 0, app->displaySize.x, app->displaySize.y);
+
+                Program& textureMeshProgram = app->programs[app->texturedGeometryProgramIdx];
+                glUseProgram(textureMeshProgram.handle);
+
+                //Model& model = app->models[app->patricio];
+                Model& model = app->models.back();
+                Mesh& mesh = app->meshes[model.meshIdx]; 
+                for (u32 i = 0; i < mesh.submeshes.size(); ++i) {
+                    GLuint vao = FindVAO(mesh, i, textureMeshProgram);
+                    glBindVertexArray(vao);
+                    u32 submeshMaterialIdx = model.materialIdx[i];
+                    Material& submeshMaterial = app->materials[submeshMaterialIdx];
+                    glActiveTexture(GL_TEXTURE);
+                    glBindTexture(GL_TEXTURE_2D, app->textures[submeshMaterial.albedoTextureIdx].handle);
+                    glUniform1i(app->programUniformTexture, 0);
+                    Submesh& submesh = mesh.submeshes[i];
+                    glDrawElements(GL_TRIANGLES, submesh.indices.size(), GL_UNSIGNED_INT, (void*)(u64)submesh.indexOffset);
+                }
             }
             break;
 

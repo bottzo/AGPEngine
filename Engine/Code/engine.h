@@ -47,6 +47,11 @@ struct VertexShaderAttribute
     u8 componentCount;
 };
 
+struct VertexShaderLayout
+{
+    std::vector<VertexShaderAttribute> attributes;
+};
+
 struct Vao
 {
     GLuint handle;
@@ -59,6 +64,7 @@ struct Program
     std::string        filepath;
     std::string        programName;
     u64                lastWriteTimestamp; // What is this for?
+    VertexShaderLayout vertexInputLayout;
 };
 
 struct Model {
@@ -126,7 +132,6 @@ struct App
 
     // program indices
     u32 texturedGeometryProgramIdx;
-    u32 patriceGeoProgramIdx;
     
     // texture indices
     u32 diceTexIdx;
