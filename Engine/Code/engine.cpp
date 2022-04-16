@@ -655,6 +655,13 @@ void Init(App* app)
     //
     //app->mode = Mode_TexturedQuad;
 
+    float aspectRario = (float)app->displaySize.x / (float)app->displaySize.y;
+    float znear = 0.1f;
+    float zfar = 1000.0f;
+    glm::mat4 projection = glm::perspective(glm::radians(60.f), aspectRario, znear, zfar);
+    glm::mat4 view = glm::lookAt(glm::vec3(0.f, 0.f, 4.f), glm::vec3(0.0f), glm::vec3(0.f, 1.f, 0.f));
+    glm::mat4 world = TransformPositionScale(vec3(2.5f, 1.5f, -2.0f), vec3(0.45f));
+    app->MVP = projection * view * world;
     LoadPatrik(app);
 }
 
@@ -748,15 +755,6 @@ void Render(App* app)
             break;
         case Mode_Patrick:
             {
-
-                float aspectRario = (float)app->displaySize.x / (float)app->displaySize.y;
-                float znear = 0.1f;
-                float zfar = 1000.0f;
-                glm::mat4 projection = glm::perspective(glm::radians(60.f), aspectRario, znear, zfar);
-                glm::mat4 view = glm::lookAt(glm::vec3(0.f,0.f,4.f), glm::vec3(0.0f), glm::vec3(0.f, 1.f, 0.f));
-                glm::mat4 world = TransformPositionScale(vec3(2.5f, 1.5f, -2.0f), vec3(0.45f));
-                glm::mat4 worldViewProjection = projection * view * world;
-
                 glClearColor(0.1f, 0.1f, 0.1f, 1.0f);
                 glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
                 glViewport(0, 0, app->displaySize.x, app->displaySize.y);
@@ -775,7 +773,7 @@ void Render(App* app)
                     glActiveTexture(GL_TEXTURE);
                     glBindTexture(GL_TEXTURE_2D, app->textures[submeshMaterial.albedoTextureIdx].handle);
                     glUniform1i(app->programUniformTexture, 0);
-                    glUniformMatrix4fv(glGetUniformLocation(textureMeshProgram.handle, "MVP"), 1, GL_FALSE, glm::value_ptr(worldViewProjection));
+                    glUniformMatrix4fv(glGetUniformLocation(textureMeshProgram.handle, "MVP"), 1, GL_FALSE, glm::value_ptr(app->MVP));
 
                     Submesh& submesh = mesh.submeshes[i];
                     glDrawElements(GL_TRIANGLES, submesh.indices.size(), GL_UNSIGNED_INT, (void*)(u64)submesh.indexOffset);
