@@ -14,19 +14,14 @@ layout(location=2) in vec2 aTexCoord;
 
 out vec2 vTexCoord;
 
+uniform mat4 MVP;
+
 void main()
 {
 	vTexCoord = aTexCoord;
 
-	//we will usually not define the clipping scale manually...
-	//it is usually computed by the projection matrix. Because
-	//we are not passing uniform transforms yet, we increase
-	//the clipping scale so that Patrick fits the screen
-	float clippingScale = 5.0;
-	gl_Position = vec4(aPosition, clippingScale);
+	gl_Position = MVP * vec4(aPosition, 1.0);
 
-	// Patrick look away from the camera by default, so i flip it here
-	gl_Position.z = -gl_Position.z;
 }
 
 #elif defined(FRAGMENT) ///////////////////////////////////////////////
