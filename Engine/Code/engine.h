@@ -152,6 +152,7 @@ struct App
     GLuint programUniformTexture;
     glm::mat4 MVP;
     float angle = 0;
+    unsigned int uniformBufferHandle;
 
     // VAO object to link our screen filling quad with our textured quad shader
     GLuint vao;

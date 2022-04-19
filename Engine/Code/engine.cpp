@@ -413,6 +413,17 @@ void LoadPatrik(App* app)
 
     app->mode = Mode_Patrick;
     glEnable(GL_DEPTH_TEST);
+
+    GLint maxUniformBufferSize;
+    GLint uniformBlockAlignment;
+    glGetIntegerv(GL_MAX_UNIFORM_BLOCK_SIZE, &maxUniformBufferSize);
+    glGetIntegerv(GL_UNIFORM_BUFFER_OFFSET_ALIGNMENT, &uniformBlockAlignment);
+
+    app->uniformBufferHandle = 0;
+    glGenBuffers(1, &app->uniformBufferHandle);
+    glBindBuffer(GL_UNIFORM_BUFFER, app->uniformBufferHandle);
+    glBufferData(GL_UNIFORM_BUFFER, maxUniformBufferSize, NULL, GL_STREAM_DRAW);
+    glBindBuffer(GL_UNIFORM_BUFFER, 0);
 }
 
 glm::mat4 TransformScale(const glm::vec3& scaleFactors)
@@ -767,7 +778,24 @@ void Render(App* app)
                 ++app->angle;
                 world = glm::rotate(world, glm::radians(app->angle), vec3(0, 1, 0));
                 app->MVP = projection * view * world;
-                //glEnable(GL_DEPTH);
+
+                glBindBuffer(GL_UNIFORM_BUFFER, app->uniformBufferHandle);
+                u8* bufferData = (u8*)glMapBuffer(GL_UNIFORM_BUFFER, GL_WRITE_ONLY);
+                u32 bufferHead = 0;
+
+                memcpy(bufferData + bufferHead, glm::value_ptr(world), sizeof(glm::mat4));
+                bufferHead += sizeof(glm::mat4);
+
+                memcpy(bufferData + bufferHead, glm::value_ptr(app->MVP), sizeof(glm::mat4));
+                bufferHead += sizeof(glm::mat4);
+
+                glUnmapBuffer(GL_UNIFORM_BUFFER);
+                glBindBuffer(GL_UNIFORM_BUFFER, 0);
+
+                u32 blockOffset = 0;
+                u32 blockSize = sizeof(glm::mat4) * 2;
+                glBindBufferRange(GL_UNIFORM_BUFFER, 1, app->uniformBufferHandle, blockOffset, blockSize);
+
                 glClearColor(0.1f, 0.1f, 0.1f, 1.0f);
                 glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
                 glViewport(0, 0, app->displaySize.x, app->displaySize.y);
@@ -786,7 +814,7 @@ void Render(App* app)
                     glActiveTexture(GL_TEXTURE);
                     glBindTexture(GL_TEXTURE_2D, app->textures[submeshMaterial.albedoTextureIdx].handle);
                     glUniform1i(app->programUniformTexture, 0);
-                    glUniformMatrix4fv(glGetUniformLocation(textureMeshProgram.handle, "MVP"), 1, GL_FALSE, glm::value_ptr(app->MVP));
+                    //glUniformMatrix4fv(glGetUniformLocation(textureMeshProgram.handle, "MVP"), 1, GL_FALSE, glm::value_ptr(app->MVP));
 
                     Submesh& submesh = mesh.submeshes[i];
                     glDrawElements(GL_TRIANGLES, submesh.indices.size(), GL_UNSIGNED_INT, (void*)(u64)submesh.indexOffset);
