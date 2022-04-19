@@ -151,6 +151,7 @@ struct App
     // Location of the texture uniform in the textured quad shader
     GLuint programUniformTexture;
     glm::mat4 MVP;
+    float angle = 0;
 
     // VAO object to link our screen filling quad with our textured quad shader
     GLuint vao;
