@@ -88,6 +88,13 @@ struct Mesh {
     GLuint indexBufferHandle;
 };
 
+struct Entity {
+    glm::mat4 worldMatrix;
+    u32 modelIndex;
+    u32 localParamsOffset;
+    u32 localParamsSize;
+};
+
 struct Material
 {
     std::string name;
@@ -128,6 +135,7 @@ struct App
     std::vector<Material> materials;
     std::vector<Mesh> meshes;
     std::vector<Model> models;
+    std::vector<Entity> entities;
 
 
     // program indices
@@ -150,9 +158,9 @@ struct App
 
     // Location of the texture uniform in the textured quad shader
     GLuint programUniformTexture;
-    glm::mat4 MVP;
     float angle = 0;
     unsigned int uniformBufferHandle;
+    int uniformBlockAlignment;
 
     // VAO object to link our screen filling quad with our textured quad shader
     GLuint vao;
