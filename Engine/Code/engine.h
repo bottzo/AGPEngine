@@ -108,6 +108,14 @@ struct Material
     u32 bumpTextureIdx;
 };
 
+struct Light 
+{
+    vec3 color;
+    vec3 position;
+    int type;
+    float range;
+};
+
 enum Mode
 {
     Mode_TexturedQuad,
