@@ -1,4 +1,4 @@
-bool IsPowerOf2(u32 value)
+/*bool IsPowerOf2(u32 value)
 {
     return value && !(value & (value - 1));
 }
@@ -64,3 +64,4 @@ void PushAlignedData(Buffer& buffer, const void* data, u32 size, u32 alignment)
 #define PushVec4(buffer, value) PushAlignedData(buffer, value_ptr(value), sizeof(value), sizeof(vec4))
 #define PushMat3(buffer, value) PushAlignedData(buffer, value_ptr(value), sizeof(value), sizeof(vec4))
 #define PushMat4(buffer, value) PushAlignedData(buffer, value_ptr(value), sizeof(value), sizeof(vec4))
+*/

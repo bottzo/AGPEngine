@@ -20,6 +20,7 @@
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="Code\assimp_model_loading.cpp" />
+    <ClCompile Include="Code\buffer_management.cpp" />
     <ClCompile Include="Code\engine.cpp" />
     <ClCompile Include="Code\platform.cpp" />
     <ClCompile Include="ThirdParty\glad\include\glad\glad.c" />

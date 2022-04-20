@@ -54,6 +54,9 @@
     <ClCompile Include="Code\assimp_model_loading.cpp">
       <Filter>Engine</Filter>
     </ClCompile>
+    <ClCompile Include="Code\buffer_management.cpp">
+      <Filter>Engine</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="ThirdParty\imgui-docking\imconfig.h">
