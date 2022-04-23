@@ -661,7 +661,7 @@ void Init(App* app)
 
     //loading lights
     //app->lights.push_back({vec3(1,1,1), vec3(1,-1,-1), vec3(0,0,0), LightType_Directional });
-    app->lights.push_back({vec3(1,1,1), vec3(1,-1,0), vec3(500,0,0), LightType_Point });
+    app->lights.push_back({vec3(1,1,1), vec3(1,-1,0), vec3(0,-5,0), LightType_Point });
 
     app->cbuffer.head = 0;
     app->cbuffer.data = nullptr;

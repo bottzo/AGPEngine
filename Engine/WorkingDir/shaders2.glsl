@@ -83,8 +83,13 @@ void main()
 		}
 		else if(uLight[i].type == 1) //point light
 		{
+			//distance 50
+			float linear = 0.09;
+			float quadratic = 0.032;
+			float distance = length(uLight[i].position - vPosition);
+			float attenuation = 1.0 / (1.+linear*distance+quadratic*distance*distance);
 			vec3 lDir = normalize(uLight[i].position - vPosition);
-			float intensity = max(dot(vNormal, lDir),0.0);
+			float intensity = max(dot(vNormal, lDir),0.0) * attenuation;
 			oColor += vec4(uLight[i].color * intensity, 0.0);
 		}
 	}
