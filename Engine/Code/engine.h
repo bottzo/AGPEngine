@@ -108,12 +108,28 @@ struct Material
     u32 bumpTextureIdx;
 };
 
+enum LightType
+{
+    LightType_Directional,
+    LightType_Point
+};
+
 struct Light 
 {
     vec3 color;
+    vec3 direction;
     vec3 position;
-    int type;
-    float range;
+    LightType type;
+    //float range;
+};
+
+struct Buffer
+{
+    GLuint handle;
+    GLenum type;
+    u32 size;
+    u32 head;
+    void* data; //mapped data
 };
 
 enum Mode
@@ -144,6 +160,7 @@ struct App
     std::vector<Mesh> meshes;
     std::vector<Model> models;
     std::vector<Entity> entities;
+    std::vector<Light> lights;
 
 
     // program indices
@@ -167,8 +184,10 @@ struct App
     // Location of the texture uniform in the textured quad shader
     GLuint programUniformTexture;
     float angle = 0;
-    unsigned int uniformBufferHandle;
     int uniformBlockAlignment;
+    u32 globalParamsOffset;
+    u32 globalParamsSize;
+    Buffer cbuffer;
 
     // VAO object to link our screen filling quad with our textured quad shader
     GLuint vao;

@@ -101,6 +101,9 @@
     <ClInclude Include="Code\assimp_model_loading.h">
       <Filter>Engine</Filter>
     </ClInclude>
+    <ClInclude Include="Code\buffer_management.h">
+      <Filter>Engine</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <None Include="WorkingDir\shaders.glsl">

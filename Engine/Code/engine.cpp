@@ -6,6 +6,7 @@
 //
 
 #include "engine.h"
+#include "buffer_management.h"
 #include "assimp_model_loading.h"
 #include <imgui.h>
 #include <stb_image.h>
@@ -413,17 +414,6 @@ void LoadPatrik(App* app)
 
     app->mode = Mode_Patrick;
     glEnable(GL_DEPTH_TEST);
-
-    GLint maxUniformBufferSize;
-    app->uniformBlockAlignment;
-    glGetIntegerv(GL_MAX_UNIFORM_BLOCK_SIZE, &maxUniformBufferSize);
-    glGetIntegerv(GL_UNIFORM_BUFFER_OFFSET_ALIGNMENT, &app->uniformBlockAlignment);
-
-    app->uniformBufferHandle = 0;
-    glGenBuffers(1, &app->uniformBufferHandle);
-    glBindBuffer(GL_UNIFORM_BUFFER, app->uniformBufferHandle);
-    glBufferData(GL_UNIFORM_BUFFER, maxUniformBufferSize, NULL, GL_STREAM_DRAW);
-    glBindBuffer(GL_UNIFORM_BUFFER, 0);
 }
 
 glm::mat4 TransformScale(const glm::vec3& scaleFactors)
@@ -667,16 +657,23 @@ void Init(App* app)
     //
     //app->mode = Mode_TexturedQuad;
 
-    //float aspectRario = (float)app->displaySize.x / (float)app->displaySize.y;
-    //float znear = 0.1f;
-    //float zfar = 1000.0f;
-    //glm::mat4 projection = glm::perspective(glm::radians(60.f), aspectRario, znear, zfar);
-    //glm::mat4 view = glm::lookAt(glm::vec3(0.f, 0.f, 4.f), glm::vec3(0.0f), glm::vec3(0.f, 1.f, 0.f));
-    //glm::mat4 world = TransformPositionScale(vec3(2.5f, 1.5f, -2.0f), vec3(0.45f));
-    //app->angle = 0;
-    //glm::rotate(world, app->angle, vec3(0, 1, 0));
-    //app->MVP = projection * view * world;
     LoadPatrik(app);
+
+    //loading lights
+    app->lights.push_back({vec3(1,1,1), vec3(1,1,1), vec3(0,0,0), LightType_Directional });
+
+    app->cbuffer.head = 0;
+    app->cbuffer.data = nullptr;
+    GLint maxUniformBufferSize;
+    glGetIntegerv(GL_MAX_UNIFORM_BLOCK_SIZE, &maxUniformBufferSize);
+    app->cbuffer.size = maxUniformBufferSize;
+    glGetIntegerv(GL_UNIFORM_BUFFER_OFFSET_ALIGNMENT, &app->uniformBlockAlignment);
+    app->cbuffer.type = GL_UNIFORM_BUFFER;
+
+    glGenBuffers(1, &app->cbuffer.handle);
+    glBindBuffer(GL_UNIFORM_BUFFER, app->cbuffer.handle);
+    glBufferData(GL_UNIFORM_BUFFER, app->cbuffer.size, NULL, GL_STREAM_DRAW);
+    glBindBuffer(GL_UNIFORM_BUFFER, 0);
 
     float x = 2.8f;
     //Load x patrick entities
@@ -699,42 +696,55 @@ void Gui(App* app)
     ImGui::End();
 }
 
-u32 Align(u32 value, u32 alignment)
-{
-    return (value + alignment - 1) & ~(alignment - 1);
-}
-
 void Update(App* app)
 {
     float aspectRario = (float)app->displaySize.x / (float)app->displaySize.y;
     float znear = 0.1f;
     float zfar = 1000.0f;
     glm::mat4 projection = glm::perspective(glm::radians(60.f), aspectRario, znear, zfar);
-    glm::mat4 view = glm::lookAt(glm::vec3(0.f, 0.f, 4.f), glm::vec3(0.0f), glm::vec3(0.f, 1.f, 0.f));
+    glm::vec3 cameraPos = glm::vec3(0.f, 0.f, 4.f);
+    glm::mat4 view = glm::lookAt(cameraPos, glm::vec3(0.0f), glm::vec3(0.f, 1.f, 0.f));
 
+    ++app->angle;
 
-    glBindBuffer(GL_UNIFORM_BUFFER, app->uniformBufferHandle);
+    glBindBuffer(GL_UNIFORM_BUFFER, app->cbuffer.handle);
 
-    u8* bufferData = (u8*)glMapBuffer(GL_UNIFORM_BUFFER, GL_WRITE_ONLY);
-    u32 bufferHead = 0;
-    // You can handle app->input keyboard/mouse here
+    //u8* bufferData = (u8*)glMapBuffer(GL_UNIFORM_BUFFER, GL_WRITE_ONLY);
+    //u32 bufferHead = 0;
+    app->cbuffer.head = 0;
+    app->cbuffer.data = glMapBuffer(GL_UNIFORM_BUFFER, GL_WRITE_ONLY);
+
+    // -- Global Params
+    app->globalParamsOffset = app->cbuffer.head;
+    PushVec3(app->cbuffer, cameraPos);
+    PushUInt(app->cbuffer, app->lights.size());
+    
+    for (u32 i = 0; i < app->lights.size(); ++i)
+    {
+        AlignHead(app->cbuffer, sizeof(vec4));
+    
+        Light& light = app->lights[i];
+        PushVec3(app->cbuffer, light.color);
+        PushVec3(app->cbuffer, light.direction);
+        PushVec3(app->cbuffer, light.position);
+        PushUInt(app->cbuffer, light.type);
+    }
+    app->globalParamsSize = app->cbuffer.head - app->globalParamsOffset;
+
+    // -- Local Params
     for (int i = 0; i<app->entities.size(); ++i)
     {
 
-        bufferHead = Align(bufferHead, app->uniformBlockAlignment);
-        app->entities[i].localParamsOffset = bufferHead;
+        AlignHead(app->cbuffer, app->uniformBlockAlignment);
+        app->entities[i].localParamsOffset = app->cbuffer.head;
 
-        ++app->angle;
         glm::mat4 world = glm::rotate(app->entities[i].worldMatrix, glm::radians(app->angle), vec3(0, 1, 0));
         glm::mat4 MVP = projection * view * world;
 
-        memcpy(bufferData + bufferHead, glm::value_ptr(world), sizeof(glm::mat4));
-        bufferHead += sizeof(glm::mat4);
+        PushMat4(app->cbuffer, world);
+        PushMat4(app->cbuffer, MVP);
 
-        memcpy(bufferData + bufferHead, glm::value_ptr(MVP), sizeof(glm::mat4));
-        bufferHead += sizeof(glm::mat4);
-
-        app->entities[i].localParamsSize = bufferHead - app->entities[i].localParamsOffset;
+        app->entities[i].localParamsSize = app->cbuffer.head - app->entities[i].localParamsOffset;
     }
 
     glUnmapBuffer(GL_UNIFORM_BUFFER);
@@ -827,10 +837,12 @@ void Render(App* app)
 
                 Program& textureMeshProgram = app->programs[app->texturedGeometryProgramIdx];
                 glUseProgram(textureMeshProgram.handle);
-                for(Entity entity : app->entities){
-                    //u32 blockOffset = 0;
-                    //u32 blockSize = sizeof(glm::mat4) * 2;
-                    glBindBufferRange(GL_UNIFORM_BUFFER, 1, app->uniformBufferHandle, entity.localParamsOffset, entity.localParamsSize);
+                //binding global uniform buffer params
+                glBindBufferRange(GL_UNIFORM_BUFFER, 0, app->cbuffer.handle, app->globalParamsOffset, app->globalParamsSize);
+                for(Entity entity : app->entities)
+                {
+                    //binding local uniform buffer params
+                    glBindBufferRange(GL_UNIFORM_BUFFER, 1, app->cbuffer.handle, entity.localParamsOffset, entity.localParamsSize);
                     Model& model = app->models[entity.modelIndex];
                     Mesh& mesh = app->meshes[model.meshIdx]; 
                     for (u32 i = 0; i < mesh.submeshes.size(); ++i) {
