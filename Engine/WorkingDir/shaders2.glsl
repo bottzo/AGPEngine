@@ -21,6 +21,7 @@ struct Light
 };
 layout(binding = 0, std140) uniform GlobalParams
 {
+	mat4 viewMatrix;
 	vec3 uCameraPosition;
 	unsigned int uLightCount;
 	Light uLight[16];
@@ -40,8 +41,8 @@ out vec3 uViewDir;
 void main()
 {
 	vTexCoord = aTexCoord;
-	vPosition = vec3(uWorldMatrix * vec4(aPosition, 1.0) );
-	vNormal = vec3( uWorldMatrix * vec4(aNormal, 0.0) );
+	vPosition = vec3(viewMatrix * uWorldMatrix * vec4(aPosition, 1.0) );
+	vNormal = normalize(vec3( uWorldMatrix * vec4(aNormal, 0.0) ));
 	uViewDir = uCameraPosition - vPosition;
 	gl_Position = uWorldViewProjectionMatrix * vec4(aPosition, 1.0);
 }
@@ -64,6 +65,7 @@ struct Light
 };
 layout(binding = 0, std140) uniform GlobalParams
 {
+	mat4 viewMatrix;
 	vec3 uCameraPosition;
 	unsigned int uLightCount;
 	Light uLight[16];
@@ -77,7 +79,13 @@ void main()
 	for(int i = 0; i < uLightCount && i < 16; ++i)
 	{
 		if(uLight[i].type == 0)  //directional light
-			oColor += vec4(uLight[i].color * dot(vNormal, uLight[i].direction),1.0);
+			oColor += vec4(uLight[i].color * dot(vNormal, normalize(uLight[i].direction)), 0.0);
+		else if(uLight[i].type == 1) //point light
+		{
+			vec3 lDir = normalize(uLight[i].position - vPosition);
+			float intensity = max(dot(vNormal, lDir),0.0);
+			oColor += vec4(uLight[i].color * intensity, 0.0);
+		}
 	}
 }
 #endif
