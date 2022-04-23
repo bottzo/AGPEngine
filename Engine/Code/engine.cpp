@@ -660,8 +660,8 @@ void Init(App* app)
     LoadPatrik(app);
 
     //loading lights
-    //app->lights.push_back({vec3(1,1,1), vec3(1,1,1), vec3(0,0,0), LightType_Directional });
-    app->lights.push_back({vec3(1,1,1), vec3(1,-1,0), vec3(0,-500,0), LightType_Point });
+    //app->lights.push_back({vec3(1,1,1), vec3(1,-1,-1), vec3(0,0,0), LightType_Directional });
+    app->lights.push_back({vec3(1,1,1), vec3(1,-1,0), vec3(500,0,0), LightType_Point });
 
     app->cbuffer.head = 0;
     app->cbuffer.data = nullptr;
@@ -717,7 +717,6 @@ void Update(App* app)
 
     // -- Global Params
     app->globalParamsOffset = app->cbuffer.head;
-    PushMat4(app->cbuffer, view);
     PushVec3(app->cbuffer, cameraPos);
     PushUInt(app->cbuffer, app->lights.size());
     
