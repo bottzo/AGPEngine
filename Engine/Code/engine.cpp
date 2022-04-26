@@ -429,6 +429,22 @@ glm::mat4 TransformPositionScale(const glm::vec3& pos, const glm::vec3& scaleFac
     return transform;
 }
 
+constexpr vec3 GetAttenuationValuesFromRange(unsigned int range)
+{
+    if (range <= 7) { return vec3(1, 0.7, 1.8); }
+    else if (range <= 13) { return vec3(1, 0.35, 0.44); }
+    else if (range <= 20) { return vec3(1, 0.22, 0.20); }
+    else if (range <= 32) { return vec3(1, 0.14, 0.07); }
+    else if (range <= 50) { return vec3(1, 0.09, 0.032); }
+    else if (range <= 65) { return vec3(1, 0.07, 0.017); }
+    else if (range <= 100) { return vec3(1, 0.045, 0.0075); }
+    else if (range <= 160) { return vec3(1, 0.027, 0.0028); }
+    else if (range <= 200) { return vec3(1, 0.022, 0.0019); }
+    else if (range <= 325) { return vec3(1, 0.014, 0.0007); }
+    else if (range <= 600) { return vec3(1, 0.007, 0.0002); }
+    else if (range <= 3250) { return vec3(1, 0.0014, 0.000007); }
+}
+
 void Init(App* app)
 {
     // TODO: Initialize your resources here!
@@ -661,7 +677,7 @@ void Init(App* app)
 
     //loading lights
     //app->lights.push_back({vec3(1,1,1), vec3(1,-1,-1), vec3(0,0,0), LightType_Directional });
-    app->lights.push_back({vec3(1,1,1), vec3(1,-1,0), vec3(0,-5,0), LightType_Point });
+    app->lights.push_back({vec3(1,1,1), GetAttenuationValuesFromRange(20), vec3(0,-2,0), LightType_Point });
 
     app->cbuffer.head = 0;
     app->cbuffer.data = nullptr;
