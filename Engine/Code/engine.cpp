@@ -445,6 +445,58 @@ constexpr vec3 GetAttenuationValuesFromRange(unsigned int range)
     else if (range <= 3250) { return vec3(1, 0.0014, 0.000007); }
 }
 
+GLuint GenerateFrameBuffer(App*app)
+{
+    GLuint colorAttachmentHandle;
+    glGenTextures(1, &colorAttachmentHandle);
+    glBindTexture(GL_TEXTURE_2D, colorAttachmentHandle);
+    glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA8, app->displaySize.x, app->displaySize.y, 0, GL_RGBA, GL_UNSIGNED_BYTE, NULL);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_R, GL_CLAMP_TO_EDGE);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
+    glBindTexture(GL_TEXTURE_2D, 0);
+
+    GLuint depthAttachmentHandle;
+    glGenTextures(1, &depthAttachmentHandle);
+    glBindTexture(GL_TEXTURE_2D, depthAttachmentHandle);
+    glTexImage2D(GL_TEXTURE_2D, 0, GL_DEPTH_COMPONENT24, app->displaySize.x, app->displaySize.y, 0, GL_DEPTH_COMPONENT, GL_FLOAT, NULL);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_R, GL_CLAMP_TO_EDGE);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
+    glBindTexture(GL_TEXTURE_2D, 0);
+
+    GLuint frameBufferHandle;
+    glGenFramebuffers(1, &frameBufferHandle);
+    glBindFramebuffer(GL_FRAMEBUFFER, frameBufferHandle);
+    glFramebufferTexture(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, colorAttachmentHandle, 0);
+    glFramebufferTexture(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, depthAttachmentHandle, 0);
+
+    GLenum frameBufferStatus = glCheckFramebufferStatus(GL_FRAMEBUFFER);
+    if (frameBufferStatus != GL_FRAMEBUFFER_COMPLETE)
+    {
+        switch(frameBufferStatus)
+        {
+        case GL_FRAMEBUFFER_UNDEFINED: ELOG("GL_FRAMEBUFFER_UNDEFINED"); break;
+        case GL_FRAMEBUFFER_INCOMPLETE_ATTACHMENT: ELOG("GL_FRAMEBUFFER_INCOMPLETE_ATTACHMENT"); break;
+        case GL_FRAMEBUFFER_INCOMPLETE_MISSING_ATTACHMENT: ELOG("GL_FRAMEBUFFER_INCOMPLETE_MISSING_ATTACHMENT"); break;
+        case GL_FRAMEBUFFER_INCOMPLETE_DRAW_BUFFER: ELOG("GL_FRAMEBUFFER_INCOMPLETE_DRAW_BUFFER"); break;
+        case GL_FRAMEBUFFER_INCOMPLETE_READ_BUFFER: ELOG("GL_FRAMEBUFFER_INCOMPLETE_READ_BUFFER"); break;
+        case GL_FRAMEBUFFER_UNSUPPORTED: ELOG("GL_FRAMEBUFFER_UNSUPPORTED"); break;
+        case GL_FRAMEBUFFER_INCOMPLETE_MULTISAMPLE: ELOG("GL_FRAMEBUFFER_INCOMPLETE_MULTISAMPLE"); break;
+        case GL_FRAMEBUFFER_INCOMPLETE_LAYER_TARGETS: ELOG("GL_FRAMEBUFFER_INCOMPLETE_LAYER_TARGETS"); break;
+        default: ELOG("Unknown framebuffer status error");
+        }
+    }
+    glDrawBuffers(1, &colorAttachmentHandle);
+    glBindFramebuffer(GL_FRAMEBUFFER, 0);
+
+    return frameBufferHandle;
+}
+
 void Init(App* app)
 {
     // TODO: Initialize your resources here!
@@ -672,7 +724,8 @@ void Init(App* app)
     //app->magentaTexIdx = LoadTexture2D(app, "color_magenta.png");
     //
     //app->mode = Mode_TexturedQuad;
-
+    
+    app->framebufferHandle = GenerateFrameBuffer(app);
     LoadPatrik(app);
 
     //loading lights
@@ -847,6 +900,8 @@ void Render(App* app)
             break;
         case Mode_Patrick:
             {
+                //glBindFramebuffer(GL_FRAMEBUFFER, app->framebufferHandle);
+                //glDrawBuffer(GL_COLOR_ATTACHMENT0);
 
                 glClearColor(0.1f, 0.1f, 0.1f, 1.0f);
                 glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
