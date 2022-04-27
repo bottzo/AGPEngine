@@ -165,6 +165,7 @@ struct App
 
     // program indices
     u32 texturedGeometryProgramIdx;
+    u32 patrickProgramIdx;
     
     // texture indices
     u32 diceTexIdx;
@@ -183,6 +184,7 @@ struct App
 
     // Location of the texture uniform in the textured quad shader
     GLuint programUniformTexture;
+    GLuint patrickProgramUniform;
     float angle = 0;
     int uniformBlockAlignment;
     u32 globalParamsOffset;
@@ -193,6 +195,9 @@ struct App
     GLuint vao;
 
     GLuint framebufferHandle = 0;
+    GLuint colorAttachmentHandle = 0;
+    GLuint colorAttachmentHandle2 = 0;
+    GLuint depthAttachmentHandle = 0;
 };
 
 void Init(App* app);

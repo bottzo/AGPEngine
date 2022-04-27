@@ -70,9 +70,11 @@ layout(binding = 0, std140) uniform GlobalParams
 };
 
 layout(location = 0)out vec4 oColor;
+layout(location = 1)out vec4 nColor;
 
 void main()
 {
+	nColor = vec4(vNormal,1.);
 	oColor = texture(uTexture,vTexCoord);
 	for(int i = 0; i < uLightCount && i < 16; ++i)
 	{
