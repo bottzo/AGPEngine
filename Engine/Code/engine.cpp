@@ -795,10 +795,35 @@ void Init(App* app)
         one.localParamsSize = 0;
         app->entities.push_back(one);
     }
+    //app->mode = Mode::Mode_TexturedQuad;
 }
 
 void Gui(App* app)
 {
+    //DOCKING
+    ImGuiWindowFlags window_flags = ImGuiWindowFlags_MenuBar;
+    ImGuiViewport* viewport = ImGui::GetMainViewport();
+    ImGui::SetNextWindowPos(viewport->Pos);
+    ImGui::SetNextWindowSize(viewport->Size);
+    ImGui::SetNextWindowViewport(viewport->ID);
+    ImGui::PushStyleVar(ImGuiStyleVar_WindowRounding, 0.0f);
+    ImGui::PushStyleVar(ImGuiStyleVar_WindowBorderSize, 0.0f);
+    window_flags |= ImGuiWindowFlags_NoTitleBar | ImGuiWindowFlags_NoCollapse | ImGuiWindowFlags_NoResize | ImGuiWindowFlags_NoMove;
+    window_flags |= ImGuiWindowFlags_NoNavFocus | ImGuiWindowFlags_NoBringToFrontOnFocus | ImGuiWindowFlags_NoBackground;
+    ImGui::PushStyleVar(ImGuiStyleVar_WindowPadding, ImVec2(0.0f, 0.0f));
+    static bool docking = true;
+    if (ImGui::Begin("DockSpace", &docking, window_flags)) {
+        // DockSpace
+        ImGui::PopStyleVar(3);
+        if (docking)
+        {
+            ImGuiID dockspace_id = ImGui::GetID("DockSpace");
+            ImGui::DockSpace(dockspace_id, ImVec2(0.0f, 0.0f), ImGuiDockNodeFlags_PassthruCentralNode);
+        }
+
+        ImGui::End();
+    }
+
     ImGui::Begin("Info");
     ImGui::Text("FPS: %f", 1.0f/app->deltaTime);
     char strMem[8];
@@ -946,7 +971,7 @@ void Render(App* app)
                 glClearColor(0.1f,0.1f,0.1f,1.0f);
                 glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
-                glViewport(0,0,app->displaySize.x,app->displaySize.y);
+                //glViewport(0,0,app->displaySize.x,app->displaySize.y);
 
                 Program& programTexturedGeometry = app->programs[app->texturedGeometryProgramIdx];
                 glUseProgram(programTexturedGeometry.handle);
@@ -974,7 +999,7 @@ void Render(App* app)
                 
                 glClearColor(0.1f, 0.1f, 0.1f, 1.0f);
                 glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-                glViewport(0, 0, app->displaySize.x, app->displaySize.y);
+                //glViewport(0, 0, app->displaySize.x, app->displaySize.y);
                 
                 Program& textureMeshProgram = app->programs[app->patrickProgramIdx];
                 glUseProgram(textureMeshProgram.handle);
@@ -1003,8 +1028,9 @@ void Render(App* app)
                 glBindVertexArray(0);
                 glUseProgram(0);
                 
-                //draw scene texture to screen
+                ////draw scene texture to screen
                 glBindFramebuffer(GL_FRAMEBUFFER, 0);
+                //glViewport(0, 0, app->displaySize.x, app->displaySize.y);
                 
                 glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
                 
