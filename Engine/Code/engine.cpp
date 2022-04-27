@@ -783,11 +783,13 @@ void Init(App* app)
     glBufferData(GL_UNIFORM_BUFFER, app->cbuffer.size, NULL, GL_STREAM_DRAW);
     glBindBuffer(GL_UNIFORM_BUFFER, 0);
 
-    float x = 2.8f;
+    float x = -2.6f;
+    float z = -1.5f;
     //Load x patrick entities
     for (int i = 0; i < 3; ++i) {
-        glm::mat4 world = TransformPositionScale(vec3(x, 1.5f, -2.0f), vec3(0.45f));
-        x-=3;
+        glm::mat4 world = TransformPositionScale(vec3(x, 1.5f, z), vec3(0.45f));
+        x += 3;
+        z -= 3;
         Entity one = {};
         one.worldMatrix = world;
         one.modelIndex = app->models.size() - 1;
