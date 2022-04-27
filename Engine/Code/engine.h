@@ -139,6 +139,13 @@ enum Mode
     Mode_Count
 };
 
+enum AttachmentOutputs {
+    SCENE,
+    ALBEDO,
+    NORMALS,
+    DEPTH
+};
+
 struct App
 {
     // Loop
@@ -194,8 +201,11 @@ struct App
     // VAO object to link our screen filling quad with our textured quad shader
     GLuint vao;
 
+    AttachmentOutputs currentAttachmentType = AttachmentOutputs::SCENE;
+    GLuint currentAttachmentTextureHandle = 0;
     GLuint framebufferHandle = 0;
-    GLuint colorAttachmentHandle = 0;
+    GLuint colorAttachmentHandle0 = 0;
+    GLuint colorAttachmentHandle1 = 0;
     GLuint colorAttachmentHandle2 = 0;
     GLuint colorAttachmentHandle3 = 0;
     GLuint depthAttachmentHandle = 0;

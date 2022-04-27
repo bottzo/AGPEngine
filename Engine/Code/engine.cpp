@@ -448,8 +448,18 @@ constexpr vec3 GetAttenuationValuesFromRange(unsigned int range)
 
 GLuint GenerateFrameBuffer(App*app)
 {
-    glGenTextures(1, &app->colorAttachmentHandle);
-    glBindTexture(GL_TEXTURE_2D, app->colorAttachmentHandle);
+    glGenTextures(1, &app->colorAttachmentHandle0);
+    glBindTexture(GL_TEXTURE_2D, app->colorAttachmentHandle0);
+    glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA8, app->displaySize.x, app->displaySize.y, 0, GL_RGBA, GL_UNSIGNED_BYTE, NULL);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_R, GL_CLAMP_TO_EDGE);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
+    glBindTexture(GL_TEXTURE_2D, 0);
+
+    glGenTextures(1, &app->colorAttachmentHandle1);
+    glBindTexture(GL_TEXTURE_2D, app->colorAttachmentHandle1);
     glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA8, app->displaySize.x, app->displaySize.y, 0, GL_RGBA, GL_UNSIGNED_BYTE, NULL);
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
@@ -491,9 +501,10 @@ GLuint GenerateFrameBuffer(App*app)
     GLuint frameBufferHandle;
     glGenFramebuffers(1, &frameBufferHandle);
     glBindFramebuffer(GL_FRAMEBUFFER, frameBufferHandle);
-    glFramebufferTexture(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, app->colorAttachmentHandle, 0);
-    glFramebufferTexture(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT1, app->colorAttachmentHandle2, 0);
-    glFramebufferTexture(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT2, app->colorAttachmentHandle3, 0);
+    glFramebufferTexture(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, app->colorAttachmentHandle0, 0);
+    glFramebufferTexture(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT1, app->colorAttachmentHandle1, 0);
+    glFramebufferTexture(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT2, app->colorAttachmentHandle2, 0);
+    glFramebufferTexture(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT3, app->colorAttachmentHandle3, 0);
     glFramebufferTexture(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, app->depthAttachmentHandle, 0);
 
     GLenum frameBufferStatus = glCheckFramebufferStatus(GL_FRAMEBUFFER);
@@ -513,8 +524,8 @@ GLuint GenerateFrameBuffer(App*app)
         }
     }
 
-    GLenum buffers[] = { GL_COLOR_ATTACHMENT0, GL_COLOR_ATTACHMENT1, GL_COLOR_ATTACHMENT2 };
-    glDrawBuffers(2, buffers);
+    GLenum buffers[] = { GL_COLOR_ATTACHMENT0, GL_COLOR_ATTACHMENT1, GL_COLOR_ATTACHMENT2, GL_COLOR_ATTACHMENT3 };
+    glDrawBuffers(4, buffers);
     glBindFramebuffer(GL_FRAMEBUFFER, 0);
 
     return frameBufferHandle;
@@ -749,6 +760,8 @@ void Init(App* app)
     //app->mode = Mode_TexturedQuad;
     
     app->framebufferHandle = GenerateFrameBuffer(app);
+    app->currentAttachmentTextureHandle = app->colorAttachmentHandle0;
+    app->currentAttachmentType = AttachmentOutputs::SCENE;
     //for the screen quad
     LoadTexturesQuad(app);
     LoadPatrik(app);
@@ -788,6 +801,37 @@ void Gui(App* app)
 {
     ImGui::Begin("Info");
     ImGui::Text("FPS: %f", 1.0f/app->deltaTime);
+    char strMem[8];
+    char* currentValue = strMem;
+    switch (app->currentAttachmentType)
+    {
+    case AttachmentOutputs::SCENE: currentValue = (char*)"SCENE"; break;
+    case AttachmentOutputs::ALBEDO: currentValue = (char*)"ALBEDO"; break;
+    case AttachmentOutputs::NORMALS: currentValue = (char*)"NORMALS"; break;
+    case AttachmentOutputs::DEPTH: currentValue = (char*)"DEPTH"; break;
+    default:
+        break;
+    }
+    if (ImGui::BeginCombo("##Screen Output", currentValue, ImGuiComboFlags_PopupAlignLeft))
+    {
+        if (ImGui::Selectable("SCENE")) {
+            app->currentAttachmentTextureHandle = app->colorAttachmentHandle0;
+            app->currentAttachmentType = AttachmentOutputs::SCENE;
+        }
+        if (ImGui::Selectable("ALBEDO")) {
+            app->currentAttachmentTextureHandle = app->colorAttachmentHandle1;
+            app->currentAttachmentType = AttachmentOutputs::ALBEDO;
+        }
+        if (ImGui::Selectable("NORMALS")) {
+            app->currentAttachmentTextureHandle = app->colorAttachmentHandle2;
+            app->currentAttachmentType = AttachmentOutputs::NORMALS;
+        }
+        if (ImGui::Selectable("DEPTH")) {
+            app->currentAttachmentTextureHandle = app->colorAttachmentHandle3;
+            app->currentAttachmentType = AttachmentOutputs::DEPTH;
+        }
+        ImGui::EndCombo();
+    }
     ImGui::End();
 }
 
@@ -926,7 +970,7 @@ void Render(App* app)
         case Mode_Patrick:
             {
                 glBindFramebuffer(GL_FRAMEBUFFER, app->framebufferHandle);
-                glEnable(GL_DEPTH_TEST);
+                //glEnable(GL_DEPTH_TEST);
                 
                 glClearColor(0.1f, 0.1f, 0.1f, 1.0f);
                 glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
@@ -972,7 +1016,7 @@ void Render(App* app)
                 
                 glUniform1i(app->programUniformTexture, 0);
                 glActiveTexture(GL_TEXTURE0);
-                glBindTexture(GL_TEXTURE_2D, app->colorAttachmentHandle3);
+                glBindTexture(GL_TEXTURE_2D, app->currentAttachmentTextureHandle);
                 glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_SHORT, 0);
                 glBindVertexArray(0);
                 glUseProgram(0);
