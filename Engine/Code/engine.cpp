@@ -468,6 +468,16 @@ GLuint GenerateFrameBuffer(App*app)
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
     glBindTexture(GL_TEXTURE_2D, 0);
 
+    glGenTextures(1, &app->colorAttachmentHandle3);
+    glBindTexture(GL_TEXTURE_2D, app->colorAttachmentHandle3);
+    glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA8, app->displaySize.x, app->displaySize.y, 0, GL_RGBA, GL_UNSIGNED_BYTE, NULL);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_R, GL_CLAMP_TO_EDGE);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
+    glBindTexture(GL_TEXTURE_2D, 0);
+
     glGenTextures(1, &app->depthAttachmentHandle);
     glBindTexture(GL_TEXTURE_2D, app->depthAttachmentHandle);
     glTexImage2D(GL_TEXTURE_2D, 0, GL_DEPTH_COMPONENT24, app->displaySize.x, app->displaySize.y, 0, GL_DEPTH_COMPONENT, GL_FLOAT, NULL);
@@ -483,6 +493,7 @@ GLuint GenerateFrameBuffer(App*app)
     glBindFramebuffer(GL_FRAMEBUFFER, frameBufferHandle);
     glFramebufferTexture(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, app->colorAttachmentHandle, 0);
     glFramebufferTexture(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT1, app->colorAttachmentHandle2, 0);
+    glFramebufferTexture(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT2, app->colorAttachmentHandle3, 0);
     glFramebufferTexture(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, app->depthAttachmentHandle, 0);
 
     GLenum frameBufferStatus = glCheckFramebufferStatus(GL_FRAMEBUFFER);
@@ -502,7 +513,7 @@ GLuint GenerateFrameBuffer(App*app)
         }
     }
 
-    GLenum buffers[] = { GL_COLOR_ATTACHMENT0, GL_COLOR_ATTACHMENT1 };
+    GLenum buffers[] = { GL_COLOR_ATTACHMENT0, GL_COLOR_ATTACHMENT1, GL_COLOR_ATTACHMENT2 };
     glDrawBuffers(2, buffers);
     glBindFramebuffer(GL_FRAMEBUFFER, 0);
 
@@ -961,7 +972,7 @@ void Render(App* app)
                 
                 glUniform1i(app->programUniformTexture, 0);
                 glActiveTexture(GL_TEXTURE0);
-                glBindTexture(GL_TEXTURE_2D, app->depthAttachmentHandle);
+                glBindTexture(GL_TEXTURE_2D, app->colorAttachmentHandle3);
                 glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_SHORT, 0);
                 glBindVertexArray(0);
                 glUseProgram(0);

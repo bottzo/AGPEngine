@@ -71,11 +71,13 @@ layout(binding = 0, std140) uniform GlobalParams
 
 layout(location = 0)out vec4 oColor;
 layout(location = 1)out vec4 nColor;
+layout(location = 2)out vec4 depth;
 
 void main()
 {
 	nColor = vec4(vNormal,1.);
 	oColor = texture(uTexture,vTexCoord);
+	depth = vec4(0.,0.,oColor.z,1.);
 	for(int i = 0; i < uLightCount && i < 16; ++i)
 	{
 		if(uLight[i].type == 0)  //directional light

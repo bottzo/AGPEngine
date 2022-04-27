@@ -197,6 +197,7 @@ struct App
     GLuint framebufferHandle = 0;
     GLuint colorAttachmentHandle = 0;
     GLuint colorAttachmentHandle2 = 0;
+    GLuint colorAttachmentHandle3 = 0;
     GLuint depthAttachmentHandle = 0;
 };
 
