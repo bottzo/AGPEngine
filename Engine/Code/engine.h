@@ -220,5 +220,3 @@ void Update(App* app);
 void Render(App* app);
 
 u32 LoadTexture2D(App* app, const char* filepath);
-
-GLuint GenerateFramebuffer(App* app);
