@@ -24,12 +24,13 @@ void main()
 in vec2 vTexCoord;
 
 uniform sampler2D uTexture;
+uniform sampler2D normals;
 
 layout(location = 0)out vec4 oColor;
 
 void main()
 {
-	oColor = texture(uTexture,vTexCoord);
+	oColor = texture(normals,vTexCoord);
 }
 #endif
 #endif

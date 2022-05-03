@@ -143,7 +143,8 @@ enum AttachmentOutputs {
     SCENE,
     ALBEDO,
     NORMALS,
-    DEPTH
+    DEPTH,
+    POSITION
 };
 
 struct App
@@ -208,6 +209,7 @@ struct App
     GLuint colorAttachmentHandle1 = 0;
     GLuint colorAttachmentHandle2 = 0;
     GLuint colorAttachmentHandle3 = 0;
+    GLuint colorAttachmentHandle4 = 0;
     GLuint depthAttachmentHandle = 0;
 };
 
