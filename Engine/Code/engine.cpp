@@ -180,6 +180,73 @@ u32 LoadTexture2D(App* app, const char* filepath)
     }
 }
 
+void CreateSphere(App* app)
+{
+    const u32 H = 32;
+    const u32 V = 16;
+    struct Vertex { vec3 pos; vec3 norm; };
+    Vertex sphere[H][V + 1];
+
+    VertexBufferLayout vertexFormat;
+    vertexFormat.attributes.push_back({ 0,3,0 });
+    vertexFormat.attributes.push_back({ 1,3, 3 * sizeof(float) });
+    Submesh subMesh = {};
+    subMesh.vertices.reserve(32 * 16 * 6);
+
+    for (int h = 0; h < H; ++h)
+    {
+        for (int v = 0; v < V; ++v)
+        {
+            float nh = float(h) / H;
+            float nv = float(v) / V - 0.5f;
+            float angleh = 2 * PI * nh;
+            float anglev = -PI * nv;
+            sphere[h][v].pos.x = sinf(angleh) * cosf(anglev);
+            sphere[h][v].pos.y = -sinf(anglev);
+            sphere[h][v].pos.z = cosf(angleh) * cosf(anglev);
+            sphere[h][v].norm = sphere[h][v].pos;
+            subMesh.vertices.push_back(sphere[h][v].pos.x);
+            subMesh.vertices.push_back(sphere[h][v].pos.y);
+            subMesh.vertices.push_back(sphere[h][v].pos.z);
+            subMesh.vertices.push_back(sphere[h][v].norm.x);
+            subMesh.vertices.push_back(sphere[h][v].norm.y);
+            subMesh.vertices.push_back(sphere[h][v].norm.z);
+        }
+    }
+
+    subMesh.indices.reserve(32 * 16 * 6);
+    u32 sphereIndices[H][V][6];
+    for (u32 h = 0; h < H; ++h)
+    {
+        for (u32 v = 0; v < V; ++v)
+        {
+            sphereIndices[h][v][0] = (h + 0) * (V + 1) + v;
+            sphereIndices[h][v][1] = ((h + 1) % H) * (V + 1) + v;
+            sphereIndices[h][v][2] = ((h + 1) % H) * (V + 1) + v + 1;
+            sphereIndices[h][v][3] = (h + 0) * (V + 1) + v;
+            sphereIndices[h][v][4] = ((h + 1) % H) * (V + 1) + v + 1;
+            sphereIndices[h][v][5] = (h + 0) * (V + 1) + v + 1;
+            subMesh.indices.push_back(sphereIndices[h][v][0]);
+            subMesh.indices.push_back(sphereIndices[h][v][1]);
+            subMesh.indices.push_back(sphereIndices[h][v][2]);
+            subMesh.indices.push_back(sphereIndices[h][v][3]);
+            subMesh.indices.push_back(sphereIndices[h][v][4]);
+            subMesh.indices.push_back(sphereIndices[h][v][5]);
+        }
+    }
+
+    Mesh mesh = {};
+    mesh.submeshes.push_back(subMesh);
+    glGenBuffers(1, &mesh.vertexBufferHandle);
+    glBindBuffer(GL_ARRAY_BUFFER, mesh.vertexBufferHandle);
+    glBufferData(GL_ARRAY_BUFFER, subMesh.vertices.size(), NULL, GL_STATIC_DRAW);
+
+    glGenBuffers(1, &mesh.indexBufferHandle);
+    glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, mesh.indexBufferHandle);
+    glBufferData(GL_ELEMENT_ARRAY_BUFFER, subMesh.indices.size(), NULL, GL_STATIC_DRAW);
+    app->meshes.push_back(mesh);
+}
+
 void LoadTexturesQuad(App* app)
 {
     const float vertices[] = {
