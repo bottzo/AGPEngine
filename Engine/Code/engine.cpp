@@ -180,22 +180,33 @@ u32 LoadTexture2D(App* app, const char* filepath)
     }
 }
 
-void CreateSphere(App* app)
+u32 CreateSphere(App* app)
 {
     const u32 H = 32;
     const u32 V = 16;
     struct Vertex { vec3 pos; vec3 norm; };
     Vertex sphere[H][V + 1];
 
+    app->meshes.push_back(Mesh{});
+    Mesh& mesh = app->meshes.back();
+    app->models.push_back(Model{});
+    Model& model = app->models.back();
+    model.meshIdx = (u32)app->meshes.size() - 1u;
+    u32 modelIdx = (u32)app->models.size() - 1u;
+
+    mesh.submeshes.push_back(Submesh{});
+    Submesh& subMesh = mesh.submeshes.back();
     VertexBufferLayout vertexFormat;
     vertexFormat.attributes.push_back({ 0,3,0 });
     vertexFormat.attributes.push_back({ 1,3, 3 * sizeof(float) });
-    Submesh subMesh = {};
-    subMesh.vertices.reserve(32 * 16 * 6);
+    vertexFormat.attributes.push_back(VertexBufferAttribute{ 2, 2, 2*sizeof(float) });
+    vertexFormat.stride = 8 * sizeof(float);
+    subMesh.vertexBufferLayout = vertexFormat;
+    subMesh.vertices.reserve(32 * 16 * 8);
 
     for (int h = 0; h < H; ++h)
     {
-        for (int v = 0; v < V; ++v)
+        for (int v = 0; v < V+1; ++v)
         {
             float nh = float(h) / H;
             float nv = float(v) / V - 0.5f;
@@ -211,6 +222,9 @@ void CreateSphere(App* app)
             subMesh.vertices.push_back(sphere[h][v].norm.x);
             subMesh.vertices.push_back(sphere[h][v].norm.y);
             subMesh.vertices.push_back(sphere[h][v].norm.z);
+            subMesh.vertices.push_back(0.f);
+            subMesh.vertices.push_back(0.f);
+
         }
     }
 
@@ -235,16 +249,16 @@ void CreateSphere(App* app)
         }
     }
 
-    Mesh mesh = {};
-    mesh.submeshes.push_back(subMesh);
     glGenBuffers(1, &mesh.vertexBufferHandle);
     glBindBuffer(GL_ARRAY_BUFFER, mesh.vertexBufferHandle);
-    glBufferData(GL_ARRAY_BUFFER, subMesh.vertices.size(), NULL, GL_STATIC_DRAW);
+    glBufferData(GL_ARRAY_BUFFER, subMesh.vertices.size()*sizeof(float), subMesh.vertices.data(), GL_STATIC_DRAW);
 
     glGenBuffers(1, &mesh.indexBufferHandle);
     glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, mesh.indexBufferHandle);
-    glBufferData(GL_ELEMENT_ARRAY_BUFFER, subMesh.indices.size(), NULL, GL_STATIC_DRAW);
-    app->meshes.push_back(mesh);
+    glBufferData(GL_ELEMENT_ARRAY_BUFFER, subMesh.indices.size()*sizeof(u32), subMesh.indices.data(), GL_STATIC_DRAW);
+
+    model.materialIdx.push_back(app->materials.size() - 1);
+    return modelIdx;
 }
 
 void LoadTexturesQuad(App* app)
@@ -875,6 +889,14 @@ void Init(App* app)
         one.localParamsSize = 0;
         app->entities.push_back(one);
     }
+
+    u32 sphereModelIdx = CreateSphere(app);
+    Entity sphere = {};
+    sphere.worldMatrix = TransformPositionScale(vec3(0.4f, 0.f, 1.5f), vec3(1.f));
+    sphere.modelIndex = sphereModelIdx;
+    sphere.localParamsOffset = 0;
+    sphere.localParamsSize = 0;
+    app->entities.push_back(sphere);
     //app->mode = Mode::Mode_TexturedQuad;
 }
 
@@ -987,7 +1009,7 @@ void Update(App* app)
         AlignHead(app->cbuffer, app->uniformBlockAlignment);
         app->entities[i].localParamsOffset = app->cbuffer.head;
 
-        glm::mat4 world = glm::rotate(app->entities[i].worldMatrix, glm::radians(app->angle), vec3(0, 1, 0));
+        glm::mat4 world = glm::rotate(app->entities[i].worldMatrix, glm::radians(app->angle), vec3(0, 0, 1));
         glm::mat4 MVP = projection * view * world;
 
         PushMat4(app->cbuffer, world);
