@@ -971,7 +971,7 @@ void Update(App* app)
 {
     float aspectRario = (float)app->displaySize.x / (float)app->displaySize.y;
     float znear = 0.1f;
-    float zfar = 1000.0f;
+    float zfar = 100.0f;
     glm::mat4 projection = glm::perspective(glm::radians(60.f), aspectRario, znear, zfar);
     glm::vec3 cameraPos = glm::vec3(0.f, 0.f, 4.f);
     glm::mat4 view = glm::lookAt(cameraPos, glm::vec3(0.0f), glm::vec3(0.f, 1.f, 0.f));
