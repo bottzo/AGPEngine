@@ -559,7 +559,7 @@ GLuint GenerateFrameBuffer(App*app)
     glGenFramebuffers(1, &frameBufferHandle);
     glBindFramebuffer(GL_FRAMEBUFFER, frameBufferHandle);
     for (unsigned int i = 0; i < colorAttachments; ++i)
-        glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, app->ColorAttachmentHandles[i], 0);
+        glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0 + i, GL_TEXTURE_2D, app->ColorAttachmentHandles[i], 0);
     glFramebufferTexture2D(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, GL_TEXTURE_2D, app->depthAttachmentHandle, 0);
 
     GLenum frameBufferStatus = glCheckFramebufferStatus(GL_FRAMEBUFFER);
@@ -981,7 +981,7 @@ void Update(App* app)
         AlignHead(app->cbuffer, app->uniformBlockAlignment);
         app->entities[i].localParamsOffset = app->cbuffer.head;
 
-        glm::mat4 world = glm::rotate(app->entities[i].worldMatrix, glm::radians(app->angle), vec3(0, 0, 1));
+        glm::mat4 world = glm::rotate(app->entities[i].worldMatrix, glm::radians(app->angle), vec3(0, 1, 0));
         glm::mat4 MVP = projection * view * world;
 
         PushMat4(app->cbuffer, world);
