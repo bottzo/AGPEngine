@@ -51,6 +51,7 @@
     <ClInclude Include="ThirdParty\stb\stb_image.h" />
   </ItemGroup>
   <ItemGroup>
+    <None Include="WorkingDir\GeometryPass.glsl" />
     <None Include="WorkingDir\shaders.glsl" />
     <None Include="WorkingDir\shaders2.glsl" />
   </ItemGroup>
@@ -153,6 +154,7 @@
       <PreprocessorDefinitions>_DEBUG;_CONSOLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <ConformanceMode>true</ConformanceMode>
       <AdditionalIncludeDirectories>$(ProjectDir)\ThirdParty\glfw\include;$(ProjectDir)\ThirdParty\glad\include;$(ProjectDir)\ThirdParty\glm\include;$(ProjectDir)\ThirdParty\imgui-docking;$(ProjectDir)\ThirdParty\stb;$(ProjectDir)\ThirdParty\Assimp\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <RuntimeLibrary>MultiThreadedDebugDLL</RuntimeLibrary>
     </ClCompile>
     <Link>
       <SubSystem>Console</SubSystem>

@@ -529,55 +529,21 @@ constexpr vec3 GetAttenuationValuesFromRange(unsigned int range)
 
 GLuint GenerateFrameBuffer(App*app)
 {
-    glGenTextures(1, &app->colorAttachmentHandle0);
-    glBindTexture(GL_TEXTURE_2D, app->colorAttachmentHandle0);
-    glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA16F, app->displaySize.x, app->displaySize.y, 0, GL_RGBA, GL_FLOAT, NULL);
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_R, GL_CLAMP_TO_EDGE);
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
-    glBindTexture(GL_TEXTURE_2D, 0);
-
-    glGenTextures(1, &app->colorAttachmentHandle1);
-    glBindTexture(GL_TEXTURE_2D, app->colorAttachmentHandle1);
-    glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA16F, app->displaySize.x, app->displaySize.y, 0, GL_RGBA, GL_FLOAT, NULL);
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_R, GL_CLAMP_TO_EDGE);
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
-    glBindTexture(GL_TEXTURE_2D, 0);
-
-    glGenTextures(1, &app->colorAttachmentHandle2);
-    glBindTexture(GL_TEXTURE_2D, app->colorAttachmentHandle2);
-    glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA16F, app->displaySize.x, app->displaySize.y, 0, GL_RGBA, GL_FLOAT, NULL);
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_R, GL_CLAMP_TO_EDGE);
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
-    glBindTexture(GL_TEXTURE_2D, 0);
-
-    glGenTextures(1, &app->colorAttachmentHandle3);
-    glBindTexture(GL_TEXTURE_2D, app->colorAttachmentHandle3);
-    glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA16F, app->displaySize.x, app->displaySize.y, 0, GL_RGBA, GL_FLOAT, NULL);
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_R, GL_CLAMP_TO_EDGE);
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
-    glBindTexture(GL_TEXTURE_2D, 0);
-
-    glGenTextures(1, &app->colorAttachmentHandle4);
-    glBindTexture(GL_TEXTURE_2D, app->colorAttachmentHandle4);
-    glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA16F, app->displaySize.x, app->displaySize.y, 0, GL_RGBA, GL_FLOAT, NULL);
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_R, GL_CLAMP_TO_EDGE);
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
-    glBindTexture(GL_TEXTURE_2D, 0);
+    const unsigned int colorAttachments = 5;
+    app->ColorAttachmentHandles.reserve(colorAttachments);
+    for (unsigned int i = 0; i < colorAttachments; ++i)
+    {
+        app->ColorAttachmentHandles.push_back(0);
+        glGenTextures(1, &app->ColorAttachmentHandles[i]);
+        glBindTexture(GL_TEXTURE_2D, app->ColorAttachmentHandles[i]);
+        glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA16F, app->displaySize.x, app->displaySize.y, 0, GL_RGBA, GL_FLOAT, NULL);
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_R, GL_CLAMP_TO_EDGE);
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
+        glBindTexture(GL_TEXTURE_2D, 0);
+    }
 
     glGenTextures(1, &app->depthAttachmentHandle);
     glBindTexture(GL_TEXTURE_2D, app->depthAttachmentHandle);
@@ -592,11 +558,8 @@ GLuint GenerateFrameBuffer(App*app)
     GLuint frameBufferHandle;
     glGenFramebuffers(1, &frameBufferHandle);
     glBindFramebuffer(GL_FRAMEBUFFER, frameBufferHandle);
-    glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, app->colorAttachmentHandle0, 0);
-    glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT1, GL_TEXTURE_2D, app->colorAttachmentHandle1, 0);
-    glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT2, GL_TEXTURE_2D, app->colorAttachmentHandle2, 0);
-    glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT3, GL_TEXTURE_2D, app->colorAttachmentHandle3, 0);
-    glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT4, GL_TEXTURE_2D, app->colorAttachmentHandle4, 0);
+    for (unsigned int i = 0; i < colorAttachments; ++i)
+        glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, app->ColorAttachmentHandles[i], 0);
     glFramebufferTexture2D(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, GL_TEXTURE_2D, app->depthAttachmentHandle, 0);
 
     GLenum frameBufferStatus = glCheckFramebufferStatus(GL_FRAMEBUFFER);
@@ -616,8 +579,10 @@ GLuint GenerateFrameBuffer(App*app)
         }
     }
 
-    GLenum buffers[] = { GL_COLOR_ATTACHMENT0, GL_COLOR_ATTACHMENT1, GL_COLOR_ATTACHMENT2, GL_COLOR_ATTACHMENT3, GL_COLOR_ATTACHMENT4 };
-    glDrawBuffers(5, buffers);
+    GLenum buffers[colorAttachments];
+    for (unsigned int i = 0; i < colorAttachments; ++i)
+        buffers[i] = GL_COLOR_ATTACHMENT0 + i;
+    glDrawBuffers(colorAttachments, buffers);
     glBindFramebuffer(GL_FRAMEBUFFER, 0);
 
     return frameBufferHandle;
@@ -852,7 +817,7 @@ void Init(App* app)
     //app->mode = Mode_TexturedQuad;
     
     app->framebufferHandle = GenerateFrameBuffer(app);
-    app->currentAttachmentTextureHandle = app->colorAttachmentHandle0;
+    app->currentAttachmentTextureHandle = app->ColorAttachmentHandles[0];
     app->currentAttachmentType = AttachmentOutputs::SCENE;
     //for the screen quad
     LoadTexturesQuad(app);
@@ -943,39 +908,46 @@ void Gui(App* app)
     if (ImGui::BeginCombo("##Screen Output", currentValue, ImGuiComboFlags_PopupAlignLeft))
     {
         if (ImGui::Selectable("SCENE")) {
-            app->currentAttachmentTextureHandle = app->colorAttachmentHandle0;
+            app->currentAttachmentTextureHandle = app->ColorAttachmentHandles[0];
             app->currentAttachmentType = AttachmentOutputs::SCENE;
         }
         if (ImGui::Selectable("ALBEDO")) {
-            app->currentAttachmentTextureHandle = app->colorAttachmentHandle1;
+            app->currentAttachmentTextureHandle = app->ColorAttachmentHandles[1];
             app->currentAttachmentType = AttachmentOutputs::ALBEDO;
         }
         if (ImGui::Selectable("NORMALS")) {
-            app->currentAttachmentTextureHandle = app->colorAttachmentHandle2;
+            app->currentAttachmentTextureHandle = app->ColorAttachmentHandles[2];
             app->currentAttachmentType = AttachmentOutputs::NORMALS;
         }
         if (ImGui::Selectable("DEPTH")) {
-            app->currentAttachmentTextureHandle = app->colorAttachmentHandle3;
+            app->currentAttachmentTextureHandle = app->ColorAttachmentHandles[3];
             app->currentAttachmentType = AttachmentOutputs::DEPTH;
         }
         if (ImGui::Selectable("POSITION")) {
-            app->currentAttachmentTextureHandle = app->colorAttachmentHandle4;
+            app->currentAttachmentTextureHandle = app->ColorAttachmentHandles[4];
             app->currentAttachmentType = AttachmentOutputs::POSITION;
         }
         ImGui::EndCombo();
     }
+    ImGui::Separator();
+    ImGui::DragFloat3("Camera Position", (float*)&app->cameraPos, 0.05f, 0.0f, 0.0f, "%.3f", NULL);       
+    ImGui::DragFloat3("Camera Rotation", (float*)&app->cameraRot, 0.1f, -360.0f, 360.0f, "%.3f", NULL);             
     ImGui::End();
 }
 
+#define DEGTORAD 0.0174533f
 void Update(App* app)
 {
     float aspectRario = (float)app->displaySize.x / (float)app->displaySize.y;
     float znear = 0.1f;
     float zfar = 100.0f;
     glm::mat4 projection = glm::perspective(glm::radians(60.f), aspectRario, znear, zfar);
-    glm::vec3 cameraPos = glm::vec3(0.f, 0.f, 4.f);
-    glm::mat4 view = glm::lookAt(cameraPos, glm::vec3(0.0f), glm::vec3(0.f, 1.f, 0.f));
-
+    //glm::mat4 view = glm::lookAt(app->cameraPos, glm::vec3(0.0f), glm::vec3(0.f, 1.f, 0.f));
+    glm::mat4 view = glm::translate(app->cameraPos);
+    view = glm::rotate(view, app->cameraRot.x * DEGTORAD, glm::vec3(1.f, 0.f, 0.f));
+    view = glm::rotate(view, app->cameraRot.y * DEGTORAD, glm::vec3(0.f, 1.f, 0.f));
+    view = glm::rotate(view, app->cameraRot.z * DEGTORAD, glm::vec3(0.f, 0.f, 1.f));
+   
     ++app->angle;
 
     glBindBuffer(GL_UNIFORM_BUFFER, app->cbuffer.handle);
@@ -987,7 +959,7 @@ void Update(App* app)
 
     // -- Global Params
     app->globalParamsOffset = app->cbuffer.head;
-    PushVec3(app->cbuffer, cameraPos);
+    PushVec3(app->cbuffer, app->cameraPos);
     PushUInt(app->cbuffer, app->lights.size());
     
     for (u32 i = 0; i < app->lights.size(); ++i)
@@ -1123,9 +1095,9 @@ void Render(App* app)
                         glBindVertexArray(vao);
                         u32 submeshMaterialIdx = model.materialIdx[i];
                         Material& submeshMaterial = app->materials[submeshMaterialIdx];
-                        glActiveTexture(GL_TEXTURE);
+                        glActiveTexture(GL_TEXTURE0);
                         glBindTexture(GL_TEXTURE_2D, app->textures[submeshMaterial.albedoTextureIdx].handle);
-                        glUniform1i(app->programUniformTexture, 0);
+                        //glUniform1i(app->programUniformTexture, 0);
                         //glUniformMatrix4fv(glGetUniformLocation(textureMeshProgram.handle, "MVP"), 1, GL_FALSE, glm::value_ptr(app->MVP));
                 
                         Submesh& submesh = mesh.submeshes[i];

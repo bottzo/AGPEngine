@@ -205,12 +205,11 @@ struct App
     AttachmentOutputs currentAttachmentType = AttachmentOutputs::SCENE;
     GLuint currentAttachmentTextureHandle = 0;
     GLuint framebufferHandle = 0;
-    GLuint colorAttachmentHandle0 = 0;
-    GLuint colorAttachmentHandle1 = 0;
-    GLuint colorAttachmentHandle2 = 0;
-    GLuint colorAttachmentHandle3 = 0;
-    GLuint colorAttachmentHandle4 = 0;
+    std::vector<GLuint> ColorAttachmentHandles;
     GLuint depthAttachmentHandle = 0;
+
+    glm::vec3 cameraPos = glm::vec3(0.f, 0.f, -4.f);
+    glm::vec3 cameraRot = glm::vec3(0.f);
 };
 
 void Init(App* app);
