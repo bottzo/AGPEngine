@@ -112,6 +112,12 @@
     <None Include="WorkingDir\shaders2.glsl">
       <Filter>Shaders</Filter>
     </None>
+    <None Include="WorkingDir\PointLight.glsl">
+      <Filter>Shaders</Filter>
+    </None>
+    <None Include="WorkingDir\DirectionalLight.glsl">
+      <Filter>Shaders</Filter>
+    </None>
     <None Include="WorkingDir\GeometryPass.glsl">
       <Filter>Shaders</Filter>
     </None>

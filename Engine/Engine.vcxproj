@@ -51,7 +51,9 @@
     <ClInclude Include="ThirdParty\stb\stb_image.h" />
   </ItemGroup>
   <ItemGroup>
+    <None Include="WorkingDir\DirectionalLight.glsl" />
     <None Include="WorkingDir\GeometryPass.glsl" />
+    <None Include="WorkingDir\PointLight.glsl" />
     <None Include="WorkingDir\shaders.glsl" />
     <None Include="WorkingDir\shaders2.glsl" />
   </ItemGroup>

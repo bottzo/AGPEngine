@@ -308,15 +308,8 @@ void LoadTexturesQuad(App* app)
     //app->mode = Mode_TexturedQuad;
 }
 
-void LoadPatrik(App* app)
+void LoadProgramAttributes(Program& program)
 {
-    u32 modelAppIdx = LoadModel(app, "Patrick/Patrick.obj");
-    app->patrickProgramIdx = LoadProgram(app, "shaders2.glsl", "TEXTURED_PATRICE");
-
-    Program& program = app->programs[app->patrickProgramIdx];
-    app->patrickProgramUniform = glGetUniformLocation(program.handle, "uTexture");
-
-
     int maxVariableNameLength;
     glGetProgramiv(program.handle, GL_ACTIVE_ATTRIBUTE_MAX_LENGTH, &maxVariableNameLength);
     char* attributeName = new char[maxVariableNameLength];
@@ -490,12 +483,23 @@ void LoadPatrik(App* app)
         //glEnableVertexAttribArray(i);
 
         //location + component count
-        program.vertexInputLayout.attributes.push_back({(u8)attributeLocation,(u8)usableAttributeSize});
+        program.vertexInputLayout.attributes.push_back({ (u8)attributeLocation,(u8)usableAttributeSize });
     }
     delete[] attributeName;
+}
+
+void LoadPatrik(App* app)
+{
+    u32 modelAppIdx = LoadModel(app, "Patrick/Patrick.obj");
+    app->patrickProgramIdx = LoadProgram(app, "shaders2.glsl", "TEXTURED_PATRICE");
+
+    Program& program = app->programs[app->patrickProgramIdx];
+    app->patrickProgramUniform = glGetUniformLocation(program.handle, "uTexture");
+
+
+    LoadProgramAttributes(program);
 
     app->mode = Mode_Patrick;
-    glEnable(GL_DEPTH_TEST);
 }
 
 glm::mat4 TransformScale(const glm::vec3& scaleFactors)
@@ -584,6 +588,9 @@ GLuint GenerateFrameBuffer(App*app)
         buffers[i] = GL_COLOR_ATTACHMENT0 + i;
     glDrawBuffers(colorAttachments, buffers);
     glBindFramebuffer(GL_FRAMEBUFFER, 0);
+
+    app->currentAttachmentTextureHandle = app->ColorAttachmentHandles[0];
+    app->currentAttachmentType = AttachmentOutputs::SCENE;
 
     return frameBufferHandle;
 }
@@ -817,15 +824,17 @@ void Init(App* app)
     //app->mode = Mode_TexturedQuad;
     
     app->framebufferHandle = GenerateFrameBuffer(app);
-    app->currentAttachmentTextureHandle = app->ColorAttachmentHandles[0];
-    app->currentAttachmentType = AttachmentOutputs::SCENE;
+
+    app->geometryPassIdx = LoadProgram(app, "GeometryPass.glsl", "GEO_PASS");
+    LoadProgramAttributes(app->programs[app->geometryPassIdx]);
+    app->directionalLightIdx = LoadProgram(app, "DirectionalLight.glsl", "DIRECTIONAL_LIGHT");
+    LoadProgramAttributes(app->programs[app->directionalLightIdx]);
+    app->pointLightIdx = LoadProgram(app, "PointLight.glsl", "POINT_LIGHT");
+    LoadProgramAttributes(app->programs[app->pointLightIdx]);
+
     //for the screen quad
     LoadTexturesQuad(app);
     LoadPatrik(app);
-
-    //loading lights
-    //app->lights.push_back({vec3(1,1,1), vec3(1,-1,-1), vec3(0,0,0), LightType_Directional });
-    app->lights.push_back({vec3(1,1,1), GetAttenuationValuesFromRange(20), vec3(0,-2,0), LightType_Point });
 
     app->cbuffer.head = 0;
     app->cbuffer.data = nullptr;
@@ -856,13 +865,18 @@ void Init(App* app)
     }
 
     u32 sphereModelIdx = CreateSphere(app);
-    Entity sphere = {};
-    sphere.worldMatrix = TransformPositionScale(vec3(0.4f, 0.f, 1.5f), vec3(1.f));
-    sphere.modelIndex = sphereModelIdx;
-    sphere.localParamsOffset = 0;
-    sphere.localParamsSize = 0;
-    app->entities.push_back(sphere);
-    //app->mode = Mode::Mode_TexturedQuad;
+    //Entity sphere = {};
+    //sphere.worldMatrix = TransformPositionScale(vec3(0.4f, 0.f, 1.5f), vec3(1.f));
+    //sphere.modelIndex = sphereModelIdx;
+    //sphere.localParamsOffset = 0;
+    //sphere.localParamsSize = 0;
+    //app->entities.push_back(sphere);
+    
+    //loading lights
+    //app->lights.push_back({vec3(1,1,1), vec3(1,-1,-1), vec3(0,0,0), LightType_Directional });
+    float radius = 8.f;
+    app->lights.push_back({ vec3(1,1,1), GetAttenuationValuesFromRange(radius), radius , LightType::LightType_Point, TransformPositionScale(vec3(0.f,-5.f, 0.f), vec3(radius)), sphereModelIdx, 0, 0 });
+
 }
 
 void Gui(App* app)
@@ -958,6 +972,7 @@ void Update(App* app)
     app->cbuffer.data = glMapBuffer(GL_UNIFORM_BUFFER, GL_WRITE_ONLY);
 
     // -- Global Params
+    //TODO: cal pujar els global params cada frame???
     app->globalParamsOffset = app->cbuffer.head;
     PushVec3(app->cbuffer, app->cameraPos);
     PushUInt(app->cbuffer, app->lights.size());
@@ -969,8 +984,9 @@ void Update(App* app)
         Light& light = app->lights[i];
         PushVec3(app->cbuffer, light.color);
         PushVec3(app->cbuffer, light.direction);
-        PushVec3(app->cbuffer, light.position);
-        PushUInt(app->cbuffer, light.type);
+        //PushVec3(app->cbuffer, light.position);
+        //PushUInt(app->cbuffer, light.type);
+        PushFloat(app->cbuffer, light.radius);
     }
     app->globalParamsSize = app->cbuffer.head - app->globalParamsOffset;
 
@@ -989,7 +1005,19 @@ void Update(App* app)
 
         app->entities[i].localParamsSize = app->cbuffer.head - app->entities[i].localParamsOffset;
     }
+    //pushing light matrices
+    for (u32 i = 0; i < app->lights.size(); ++i)
+    {
+        AlignHead(app->cbuffer, app->uniformBlockAlignment);
+        app->lights[i].localParamsOffset = app->cbuffer.head;
 
+        glm::mat4 MVP = projection * view * app->lights[i].worldMatrix;
+
+        PushMat4(app->cbuffer, app->lights[i].worldMatrix);
+        PushMat4(app->cbuffer, MVP);
+
+        app->lights[i].localParamsSize = app->cbuffer.head - app->lights[i].localParamsOffset;
+    }
     glUnmapBuffer(GL_UNIFORM_BUFFER);
     glBindBuffer(GL_UNIFORM_BUFFER, 0);
 
@@ -1074,16 +1102,24 @@ void Render(App* app)
         case Mode_Patrick:
             {
                 glBindFramebuffer(GL_FRAMEBUFFER, app->framebufferHandle);
-                //glEnable(GL_DEPTH_TEST);
+                GLenum buffers[5];
+                for (unsigned int i = 0; i < 5; ++i)
+                    buffers[i] = GL_COLOR_ATTACHMENT0 + i;
+                glDrawBuffers(5, buffers);
                 
                 glClearColor(0.1f, 0.1f, 0.1f, 1.0f);
                 glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
                 //glViewport(0, 0, app->displaySize.x, app->displaySize.y);
+
+                glEnable(GL_DEPTH_TEST);
+                //glEnable(GL_BLEND);
+                glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
                 
-                Program& textureMeshProgram = app->programs[app->patrickProgramIdx];
+                //Geometry pass
+                Program& textureMeshProgram = app->programs[app->geometryPassIdx];
                 glUseProgram(textureMeshProgram.handle);
                 //binding global uniform buffer params
-                glBindBufferRange(GL_UNIFORM_BUFFER, 0, app->cbuffer.handle, app->globalParamsOffset, app->globalParamsSize);
+                //glBindBufferRange(GL_UNIFORM_BUFFER, 0, app->cbuffer.handle, app->globalParamsOffset, app->globalParamsSize);
                 for(Entity entity : app->entities)
                 {
                     //binding local uniform buffer params
@@ -1096,6 +1132,7 @@ void Render(App* app)
                         u32 submeshMaterialIdx = model.materialIdx[i];
                         Material& submeshMaterial = app->materials[submeshMaterialIdx];
                         glActiveTexture(GL_TEXTURE0);
+                        //glEnable(GL_TEXTURE_2D);
                         glBindTexture(GL_TEXTURE_2D, app->textures[submeshMaterial.albedoTextureIdx].handle);
                         //glUniform1i(app->programUniformTexture, 0);
                         //glUniformMatrix4fv(glGetUniformLocation(textureMeshProgram.handle, "MVP"), 1, GL_FALSE, glm::value_ptr(app->MVP));
@@ -1104,14 +1141,74 @@ void Render(App* app)
                         glDrawElements(GL_TRIANGLES, submesh.indices.size(), GL_UNSIGNED_INT, (void*)(u64)submesh.indexOffset);
                     }
                 }
+
+                //Lighting pass
                 glBindVertexArray(0);
                 glUseProgram(0);
+                glDrawBuffer(GL_COLOR_ATTACHMENT0);
+                glDepthMask(GL_FALSE);
+                glEnable(GL_DEPTH_TEST);
+                glEnable(GL_BLEND);
+                glBlendFunc(GL_ONE, GL_ONE);
+
+                glBindBufferRange(GL_UNIFORM_BUFFER, 0, app->cbuffer.handle, app->globalParamsOffset, app->globalParamsSize);
+                for (int i = 0; i < app->lights.size(); ++i)
+                {
+                    Program* currProgram = &app->programs[app->directionalLightIdx];
+                    switch (app->lights[i].type)
+                    {
+                    case LightType::LightType_Directional: currProgram = &app->programs[app->directionalLightIdx]; break;
+                    case LightType::LightType_Point:currProgram = &app->programs[app->pointLightIdx]; break;
+                    default: ELOG("Light type unknown: BAD SHADER PROGRAM FOR LIGHT")break;
+                    }
+                    glUseProgram(currProgram->handle);
+                    GLint loc = glGetUniformLocation(currProgram->handle, "uTextureAlb");
+                    glUniform1i(loc, 0);
+                    loc = glGetUniformLocation(currProgram->handle, "uTextureNorm");
+                    glUniform1i(loc, 1);
+                    loc = glGetUniformLocation(currProgram->handle, "uTextureDepth");
+                    glUniform1i(loc, 2);
+                    loc = glGetUniformLocation(currProgram->handle, "uTexturePos");
+                    glUniform1i(loc, 3);
+                    glBindBufferRange(GL_UNIFORM_BUFFER, 1, app->cbuffer.handle, app->lights[i].localParamsOffset, app->lights[i].localParamsSize);
+
+                    Model& model = app->models[app->lights[i].modelIndex];
+                    Mesh& mesh = app->meshes[model.meshIdx];
+                    for (u32 i = 0; i < mesh.submeshes.size(); ++i) {
+                        GLuint vao = FindVAO(mesh, i, *currProgram);
+                        glBindVertexArray(vao);
+
+                        //glActiveTexture(GL_TEXTURE0);
+                        //glDisable(GL_TEXTURE_2D);
+                        unsigned int idx = 1;
+                        for (; idx < app->ColorAttachmentHandles.size(); ++idx)
+                        {
+                            glActiveTexture(GL_TEXTURE0 + (idx - 1));
+                            glBindTexture(GL_TEXTURE_2D, app->ColorAttachmentHandles[idx]);
+                        }
+                        //glUniform1i(app->programUniformTexture, 0);
+                        //glUniformMatrix4fv(glGetUniformLocation(textureMeshProgram.handle, "MVP"), 1, GL_FALSE, glm::value_ptr(app->MVP));
+
+                        Submesh& submesh = mesh.submeshes[i];
+                        glDrawElements(GL_TRIANGLES, submesh.indices.size(), GL_UNSIGNED_INT, (void*)(u64)submesh.indexOffset);
+                    }
+                }
+
+                glBindVertexArray(0);
+                glUseProgram(0);
+                //glEnable(GL_DEPTH_TEST);
+                glDepthMask(GL_TRUE);
+                //glDisable(GL_BLEND);
                 
-                ////draw scene texture to screen
+                //screen render pass
                 glBindFramebuffer(GL_FRAMEBUFFER, 0);
                 //glViewport(0, 0, app->displaySize.x, app->displaySize.y);
                 
+                glClearColor(0.1f, 0.1f, 0.1f, 1.0f);
                 glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+                glEnable(GL_DEPTH_TEST);
+                glDepthMask(GL_TRUE);
+                glDisable(GL_BLEND);
                 
                 glUseProgram(app->programs[app->texturedGeometryProgramIdx].handle);
                 glBindVertexArray(app->vao);
@@ -1125,6 +1222,7 @@ void Render(App* app)
                 //glActiveTexture(GL_TEXTURE1);
                 //glBindTexture(GL_TEXTURE_2D, app->colorAttachmentHandle0);
                 glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_SHORT, 0);
+                glBindTexture(GL_TEXTURE_2D, 0);
                 glBindVertexArray(0);
                 glUseProgram(0);
 

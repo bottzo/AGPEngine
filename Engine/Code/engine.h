@@ -118,9 +118,15 @@ struct Light
 {
     vec3 color;
     vec3 direction;
-    vec3 position;
+    //vec3 position;
+    float radius;
+
+    //CPU side
     LightType type;
-    //float range;
+    glm::mat4 worldMatrix;
+    u32 modelIndex;
+    u32 localParamsOffset;
+    u32 localParamsSize;
 };
 
 struct Buffer
@@ -174,6 +180,9 @@ struct App
     // program indices
     u32 texturedGeometryProgramIdx;
     u32 patrickProgramIdx;
+    u32 geometryPassIdx;
+    u32 directionalLightIdx;
+    u32 pointLightIdx;
     
     // texture indices
     u32 diceTexIdx;

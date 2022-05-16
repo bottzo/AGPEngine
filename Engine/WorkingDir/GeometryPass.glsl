@@ -21,7 +21,6 @@ layout(binding = 1, std140) uniform LocalParams
 out vec2 vTexCoord;
 out vec3 vPosition;
 out vec3 vNormal;
-out vec3 uViewDir;
 
 void main()
 {
@@ -58,6 +57,7 @@ void main()
 	outPos = vec4(vPosition,1.);
 	nColor = vec4(vNormal,1.);
 	depth = vec4(vec3(LinearizeDepth(gl_FragCoord.z) / far),1.);
+	oColor = albedo;
 }
 #endif
 #endif
