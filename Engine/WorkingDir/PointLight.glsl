@@ -63,7 +63,7 @@ void main()
 	vec3 depth = texture(uTextureDepth,tCoords).rgb;
 	vec3 position = texture(uTexturePos,tCoords).rgb;
 
-	oColor = vec4(albedo,1.);
+	oColor = vec4(0.,0.,0.,1.);
 	float constant = uLight[i].direction.x;
 	float linear = uLight[i].direction.y;
 	float quadratic = uLight[i].direction.z;
