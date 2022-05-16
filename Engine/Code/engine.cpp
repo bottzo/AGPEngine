@@ -1112,7 +1112,8 @@ void Render(App* app)
                 //glViewport(0, 0, app->displaySize.x, app->displaySize.y);
 
                 glEnable(GL_DEPTH_TEST);
-                //glEnable(GL_BLEND);
+                glDepthMask(GL_TRUE);
+                glEnable(GL_BLEND);
                 glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
                 
                 //Geometry pass
@@ -1207,14 +1208,11 @@ void Render(App* app)
                 glClearColor(0.1f, 0.1f, 0.1f, 1.0f);
                 glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
                 glEnable(GL_DEPTH_TEST);
-                glDepthMask(GL_TRUE);
+                //glDepthMask(GL_TRUE);
                 glDisable(GL_BLEND);
                 
                 glUseProgram(app->programs[app->texturedGeometryProgramIdx].handle);
-                glBindVertexArray(app->vao);
-                
-                //glEnable(GL_BLEND);
-                //glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+                glBindVertexArray(app->vao);               
                 
                 //glUniform1i(app->programUniformTexture, 0);
                 glActiveTexture(GL_TEXTURE0);
