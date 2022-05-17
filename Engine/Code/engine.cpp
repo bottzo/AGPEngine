@@ -874,8 +874,10 @@ void Init(App* app)
     
     //loading lights
     //app->lights.push_back({vec3(1,1,1), vec3(1,-1,-1), vec3(0,0,0), LightType_Directional });
-    float radius = 8.f;
-    app->lights.push_back({ vec3(1,1,1), GetAttenuationValuesFromRange(radius), radius , LightType::LightType_Point, TransformPositionScale(vec3(0.f,-5.f, 0.f), vec3(radius)), sphereModelIdx, 0, 0 });
+    //TODO: Load screen filling quad model to models for the directional
+    float radius =9.f;
+    //app->lights.push_back({ vec3(1,1,1), vec3(0,1,-1), radius , LightType::LightType_Directional, TransformScale(vec3(1.f)), sphereModelIdx, 0, 0, 0, 0});
+    app->lights.push_back({ vec3(1,1,1), GetAttenuationValuesFromRange(radius), radius , LightType::LightType_Point, TransformPositionScale(vec3(0.f,-5.f, 0.f), vec3(radius)), sphereModelIdx, 0, 0, 0, 0 });
 
 }
 
@@ -974,19 +976,22 @@ void Update(App* app)
     // -- Global Params
     //TODO: cal pujar els global params cada frame???
     app->globalParamsOffset = app->cbuffer.head;
-    PushVec3(app->cbuffer, app->cameraPos);
-    PushUInt(app->cbuffer, app->lights.size());
+    //PushVec3(app->cbuffer, app->cameraPos);
+    //PushUInt(app->cbuffer, app->lights.size());
     
     for (u32 i = 0; i < app->lights.size(); ++i)
     {
         AlignHead(app->cbuffer, sizeof(vec4));
-    
+        app->lights[i].globalParamsOffset = app->cbuffer.head;
+        
+        PushMat4(app->cbuffer, view);
         Light& light = app->lights[i];
         PushVec3(app->cbuffer, light.color);
         PushVec3(app->cbuffer, light.direction);
         //PushVec3(app->cbuffer, light.position);
         //PushUInt(app->cbuffer, light.type);
         PushFloat(app->cbuffer, light.radius);
+        app->lights[i].globalParamsSize = app->cbuffer.head - app->lights[i].globalParamsOffset;
     }
     app->globalParamsSize = app->cbuffer.head - app->globalParamsOffset;
 
@@ -1152,7 +1157,6 @@ void Render(App* app)
                 glEnable(GL_BLEND);
                 glBlendFunc(GL_ONE, GL_ONE);
 
-                glBindBufferRange(GL_UNIFORM_BUFFER, 0, app->cbuffer.handle, app->globalParamsOffset, app->globalParamsSize);
                 for (int i = 0; i < app->lights.size(); ++i)
                 {
                     Program* currProgram = &app->programs[app->directionalLightIdx];
@@ -1171,27 +1175,50 @@ void Render(App* app)
                     glUniform1i(loc, 2);
                     loc = glGetUniformLocation(currProgram->handle, "uTexturePos");
                     glUniform1i(loc, 3);
-                    glBindBufferRange(GL_UNIFORM_BUFFER, 1, app->cbuffer.handle, app->lights[i].localParamsOffset, app->lights[i].localParamsSize);
 
-                    Model& model = app->models[app->lights[i].modelIndex];
-                    Mesh& mesh = app->meshes[model.meshIdx];
-                    for (u32 i = 0; i < mesh.submeshes.size(); ++i) {
-                        GLuint vao = FindVAO(mesh, i, *currProgram);
-                        glBindVertexArray(vao);
+                    glBindBufferRange(GL_UNIFORM_BUFFER, 0, app->cbuffer.handle, app->lights[i].globalParamsOffset, app->lights[i].globalParamsSize);
 
-                        //glActiveTexture(GL_TEXTURE0);
-                        //glDisable(GL_TEXTURE_2D);
-                        unsigned int idx = 1;
-                        for (; idx < app->ColorAttachmentHandles.size(); ++idx)
-                        {
-                            glActiveTexture(GL_TEXTURE0 + (idx - 1));
-                            glBindTexture(GL_TEXTURE_2D, app->ColorAttachmentHandles[idx]);
+                    unsigned int idx = 1;
+                    for (; idx < app->ColorAttachmentHandles.size(); ++idx)
+                    {
+                        glActiveTexture(GL_TEXTURE0 + (idx - 1));
+                        glBindTexture(GL_TEXTURE_2D, app->ColorAttachmentHandles[idx]);
+                    }
+                    glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_SHORT, 0);
+
+                    if (app->lights[i].type == LightType::LightType_Directional) 
+                    {
+                        glBindVertexArray(app->vao);
+                        //unsigned int idx = 1;
+                        //for (; idx < app->ColorAttachmentHandles.size(); ++idx)
+                        //{
+                        //    glActiveTexture(GL_TEXTURE0 + (idx - 1));
+                        //    glBindTexture(GL_TEXTURE_2D, app->ColorAttachmentHandles[idx]);
+                        //}
+                        glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_SHORT, 0);
+                    }
+                    else
+                    {
+                        glBindBufferRange(GL_UNIFORM_BUFFER, 1, app->cbuffer.handle, app->lights[i].localParamsOffset, app->lights[i].localParamsSize);
+
+                        Model& model = app->models[app->lights[i].modelIndex];
+                        Mesh& mesh = app->meshes[model.meshIdx];
+                        for (u32 i = 0; i < mesh.submeshes.size(); ++i) {
+                            GLuint vao = FindVAO(mesh, i, *currProgram);
+                            glBindVertexArray(vao);
+
+                            //unsigned int idx = 1;
+                            //for (; idx < app->ColorAttachmentHandles.size(); ++idx)
+                            //{
+                            //    glActiveTexture(GL_TEXTURE0 + (idx - 1));
+                            //    glBindTexture(GL_TEXTURE_2D, app->ColorAttachmentHandles[idx]);
+                            //}
+                            //glUniform1i(app->programUniformTexture, 0);
+                            //glUniformMatrix4fv(glGetUniformLocation(textureMeshProgram.handle, "MVP"), 1, GL_FALSE, glm::value_ptr(app->MVP));
+
+                            Submesh& submesh = mesh.submeshes[i];
+                            glDrawElements(GL_TRIANGLES, submesh.indices.size(), GL_UNSIGNED_INT, (void*)(u64)submesh.indexOffset);
                         }
-                        //glUniform1i(app->programUniformTexture, 0);
-                        //glUniformMatrix4fv(glGetUniformLocation(textureMeshProgram.handle, "MVP"), 1, GL_FALSE, glm::value_ptr(app->MVP));
-
-                        Submesh& submesh = mesh.submeshes[i];
-                        glDrawElements(GL_TRIANGLES, submesh.indices.size(), GL_UNSIGNED_INT, (void*)(u64)submesh.indexOffset);
                     }
                 }
 

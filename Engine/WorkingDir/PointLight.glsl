@@ -19,6 +19,17 @@ layout(binding = 1, std140) uniform LocalParams
 	mat4 uWorldViewProjectionMatrix;
 };
 
+struct Light
+{
+	vec3 color;
+	vec3 direction;
+	float radius; //TODO: use the radius instead of the direction??? if not get rid of the radius variable
+};
+layout(binding = 0, std140) uniform GlobalParams
+{
+	mat4 uViewMatrix;
+	Light uLight;
+};
 
 void main()
 {
@@ -43,8 +54,8 @@ struct Light
 };
 layout(binding = 0, std140) uniform GlobalParams
 {
-	uint i; //Current light index
-	Light uLight[1];
+	mat4 uViewMatrix;
+	Light uLight;
 };
 
 uniform sampler2D uTextureAlb;
@@ -63,15 +74,15 @@ void main()
 	vec3 depth = texture(uTextureDepth,tCoords).rgb;
 	vec3 position = texture(uTexturePos,tCoords).rgb;
 
-	oColor = vec4(0.,0.,0.,1.);
-	float constant = uLight[i].direction.x;
-	float linear = uLight[i].direction.y;
-	float quadratic = uLight[i].direction.z;
+	//oColor = vec4(0.,0.,0.,1.);
+	float constant = uLight.direction.x;
+	float linear = uLight.direction.y;
+	float quadratic = uLight.direction.z;
 	float distance = length(lPosition - position);
 	float attenuation = 1.0 / (constant + linear*distance + quadratic*distance*distance);
 	vec3 lDir = normalize(lPosition - position);
 	float intensity = max(dot(normalize(normals), lDir),0.0) * attenuation;
-	oColor += vec4(uLight[i].color * intensity, 0.0);
+	oColor = vec4(uLight.color * intensity, 0.0);
 	//oColor = vec4(normals,1.);
 }
 #endif

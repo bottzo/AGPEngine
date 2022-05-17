@@ -127,6 +127,8 @@ struct Light
     u32 modelIndex;
     u32 localParamsOffset;
     u32 localParamsSize;
+    u32 globalParamsOffset;
+    u32 globalParamsSize;
 };
 
 struct Buffer
