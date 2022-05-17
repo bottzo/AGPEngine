@@ -10,8 +10,8 @@ layout(location=1) in vec3 aNormal;
 layout(location=2) in vec2 aTexCoord;
 
 out vec2 lTexCoord;
-out vec3 lPosition;
 out vec3 lNormal;
+out vec3 lPosition;
 
 layout(binding = 1, std140) uniform LocalParams
 {
@@ -34,8 +34,13 @@ layout(binding = 0, std140) uniform GlobalParams
 void main()
 {
 	lTexCoord = aTexCoord;
-	lPosition = vec3(uWorldMatrix * vec4(aPosition, 1.0) );
+	vec3 lFrag = vec3(uWorldMatrix * vec4(aPosition, 1.0) );
 	lNormal = normalize(vec3( uWorldMatrix * vec4(aNormal, 0.0) ));
+
+	//center of the sphere
+	lPosition.xyz = lFrag + (-lNormal * uLight.radius);
+	//counter position of the sphere
+	vec3 lFragCounter = lFrag + -lNormal * uLight.radius * 2.;
 
 	gl_Position = uWorldViewProjectionMatrix * vec4(aPosition, 1.0);
 }
@@ -43,8 +48,8 @@ void main()
 #elif defined(FRAGMENT) ///////////////////////////////////////////////
 
 in vec2 lTexCoord;
-in vec3 lPosition;
 in vec3 lNormal;
+in vec3 lPosition;
 
 struct Light
 {
@@ -80,7 +85,7 @@ void main()
 	float quadratic = uLight.direction.z;
 	float distance = length(lPosition - position);
 	float attenuation = 1.0 / (constant + linear*distance + quadratic*distance*distance);
-	vec3 lDir = normalize(lNormal);//normalize(lPosition - position);
+	vec3 lDir = lNormal;//normalize(lPosition - position);
 	float intensity = max(dot(normalize(normals), lDir),0.0) * attenuation;
 	oColor += vec4(uLight.color * intensity, 1.0);
 	//oColor = vec4(normals,1.);
