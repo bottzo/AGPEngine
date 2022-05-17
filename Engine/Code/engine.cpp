@@ -551,7 +551,7 @@ GLuint GenerateFrameBuffer(App*app)
 
     glGenTextures(1, &app->depthAttachmentHandle);
     glBindTexture(GL_TEXTURE_2D, app->depthAttachmentHandle);
-    glTexImage2D(GL_TEXTURE_2D, 0, GL_DEPTH_COMPONENT24, app->displaySize.x, app->displaySize.y, 0, GL_DEPTH_COMPONENT, GL_FLOAT, NULL);
+    glTexImage2D(GL_TEXTURE_2D, 0, GL_DEPTH24_STENCIL8, app->displaySize.x, app->displaySize.y, 0, GL_DEPTH_STENCIL, GL_UNSIGNED_INT_24_8, NULL);
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_R, GL_CLAMP_TO_EDGE);
@@ -564,7 +564,7 @@ GLuint GenerateFrameBuffer(App*app)
     glBindFramebuffer(GL_FRAMEBUFFER, frameBufferHandle);
     for (unsigned int i = 0; i < colorAttachments; ++i)
         glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0 + i, GL_TEXTURE_2D, app->ColorAttachmentHandles[i], 0);
-    glFramebufferTexture2D(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, GL_TEXTURE_2D, app->depthAttachmentHandle, 0);
+    glFramebufferTexture2D(GL_FRAMEBUFFER, GL_DEPTH_STENCIL_ATTACHMENT, GL_TEXTURE_2D, app->depthAttachmentHandle, 0);
 
     GLenum frameBufferStatus = glCheckFramebufferStatus(GL_FRAMEBUFFER);
     if (frameBufferStatus != GL_FRAMEBUFFER_COMPLETE)
@@ -863,7 +863,7 @@ void Init(App* app)
     //    one.localParamsSize = 0;
     //    app->entities.push_back(one);
     //}
-    glm::mat4 world = TransformPositionScale(vec3(0.f, 0.f, 0.f), vec3(0.45f));
+    glm::mat4 world = TransformPositionScale(vec3(0.f, 0.f, -15.f), vec3(0.45f));
     Entity one = {};
     one.worldMatrix = world;
     one.modelIndex = app->models.size() - 1;
@@ -886,6 +886,13 @@ void Init(App* app)
     //app->lights.push_back({ vec3(1,1,1), vec3(0,1,-1), radius , LightType::LightType_Directional, TransformScale(vec3(1.f)), sphereModelIdx, 0, 0, 0, 0});
     app->lights.push_back({ vec3(1,1,1), GetAttenuationValuesFromRange(radius), radius , LightType::LightType_Point, TransformPositionScale(vec3(0.f, 0.f, 0.f), vec3(radius)), sphereModelIdx, 0, 0, 0, 0 });
 
+    glBindFramebuffer(GL_FRAMEBUFFER, app->framebufferHandle);
+    glStencilMask(0x00);
+    glDisable(GL_STENCIL_TEST);
+    glStencilFunc(GL_ALWAYS, 1, 0xFF);
+    glStencilOpSeparate(GL_BACK, GL_KEEP, GL_INCR, GL_KEEP);
+    glStencilOpSeparate(GL_FRONT, GL_KEEP, GL_DECR, GL_KEEP);
+    glBindFramebuffer(GL_FRAMEBUFFER, 0);
 }
 
 void Gui(App* app)
@@ -1120,7 +1127,7 @@ void Render(App* app)
                 glDrawBuffers(5, buffers);
                 
                 glClearColor(0.0f, 0.0f, 0.0f, 1.0f);
-                glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+                glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT | GL_STENCIL_BUFFER_BIT);
                 //glViewport(0, 0, app->displaySize.x, app->displaySize.y);
 
                 glEnable(GL_DEPTH_TEST);
@@ -1160,11 +1167,12 @@ void Render(App* app)
                 glUseProgram(0);
                 glDrawBuffer(GL_COLOR_ATTACHMENT0);
                 glDepthMask(GL_FALSE);
-                glEnable(GL_DEPTH_TEST);
+                //glDisable(GL_DEPTH_TEST);
                 glEnable(GL_BLEND);
                 glBlendEquation(GL_FUNC_ADD);
                 glBlendFunc(GL_ONE, GL_ONE);
-                glClear(GL_COLOR_BUFFER_BIT);
+
+                glClear(GL_COLOR_BUFFER_BIT | GL_STENCIL_BUFFER_BIT);
 
                 for (int i = 0; i < app->lights.size(); ++i)
                 {
@@ -1186,7 +1194,6 @@ void Render(App* app)
                     glUniform1i(loc, 3);
 
                     glBindBufferRange(GL_UNIFORM_BUFFER, 0, app->cbuffer.handle, app->lights[i].globalParamsOffset, app->lights[i].globalParamsSize);
-                    glEnable(GL_CULL_FACE);
                     unsigned int idx = 1;
                     for (; idx < app->ColorAttachmentHandles.size(); ++idx)
                     {
@@ -1209,7 +1216,8 @@ void Render(App* app)
                     {
                         glBindBufferRange(GL_UNIFORM_BUFFER, 1, app->cbuffer.handle, app->lights[i].localParamsOffset, app->lights[i].localParamsSize);
                         glDisable(GL_CULL_FACE);
-
+                        glEnable(GL_STENCIL_TEST);
+                        glStencilMask(0xFF);
                         Model& model = app->models[app->lights[i].modelIndex];
                         Mesh& mesh = app->meshes[model.meshIdx];
                         for (u32 i = 0; i < mesh.submeshes.size(); ++i) {
@@ -1227,10 +1235,12 @@ void Render(App* app)
 
                             Submesh& submesh = mesh.submeshes[i];
                             glDrawElements(GL_TRIANGLES, submesh.indices.size(), GL_UNSIGNED_INT, (void*)(u64)submesh.indexOffset);
+                            glEnable(GL_CULL_FACE);
+                            glDisable(GL_STENCIL_TEST);
+                            glStencilMask(0x00);
                         }
                     }
                 }
-                glEnable(GL_CULL_FACE);
                 glBindVertexArray(0);
                 glUseProgram(0);
                 //glEnable(GL_DEPTH_TEST);
