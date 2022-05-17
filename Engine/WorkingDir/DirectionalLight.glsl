@@ -51,9 +51,9 @@ void main()
 	vec3 depth = texture(uTextureDepth,tCoords).rgb;
 	vec3 position = texture(uTexturePos,tCoords).rgb;
 
-	//oColor = vec4(albedo,1.);
+	oColor = vec4(albedo,1.);
 	float intensity = max(dot(normals, normalize(uLight.direction)),0.0);
-	oColor = vec4( uLight.color * intensity, 0.0 );
+	oColor += vec4( uLight.color * intensity, 0.0 );
 }
 #endif
 #endif

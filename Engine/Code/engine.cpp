@@ -875,9 +875,9 @@ void Init(App* app)
     //loading lights
     //app->lights.push_back({vec3(1,1,1), vec3(1,-1,-1), vec3(0,0,0), LightType_Directional });
     //TODO: Load screen filling quad model to models for the directional
-    float radius =9.f;
+    float radius = 9.f;
     //app->lights.push_back({ vec3(1,1,1), vec3(0,1,-1), radius , LightType::LightType_Directional, TransformScale(vec3(1.f)), sphereModelIdx, 0, 0, 0, 0});
-    app->lights.push_back({ vec3(1,1,1), GetAttenuationValuesFromRange(radius), radius , LightType::LightType_Point, TransformPositionScale(vec3(0.f,-5.f, 0.f), vec3(radius)), sphereModelIdx, 0, 0, 0, 0 });
+    app->lights.push_back({ vec3(1,1,1), GetAttenuationValuesFromRange(radius), radius , LightType::LightType_Point, TransformPositionScale(vec3(0.f, 0.f, 0.f), vec3(radius)), sphereModelIdx, 0, 0, 0, 0 });
 
 }
 
@@ -1112,13 +1112,13 @@ void Render(App* app)
                     buffers[i] = GL_COLOR_ATTACHMENT0 + i;
                 glDrawBuffers(5, buffers);
                 
-                glClearColor(0.1f, 0.1f, 0.1f, 1.0f);
+                glClearColor(0.0f, 0.0f, 0.0f, 1.0f);
                 glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
                 //glViewport(0, 0, app->displaySize.x, app->displaySize.y);
 
                 glEnable(GL_DEPTH_TEST);
                 glDepthMask(GL_TRUE);
-                glEnable(GL_BLEND);
+                glDisable(GL_BLEND);
                 glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
                 
                 //Geometry pass
@@ -1155,7 +1155,9 @@ void Render(App* app)
                 glDepthMask(GL_FALSE);
                 glEnable(GL_DEPTH_TEST);
                 glEnable(GL_BLEND);
+                glBlendEquation(GL_FUNC_ADD);
                 glBlendFunc(GL_ONE, GL_ONE);
+                glClear(GL_COLOR_BUFFER_BIT);
 
                 for (int i = 0; i < app->lights.size(); ++i)
                 {
@@ -1177,14 +1179,13 @@ void Render(App* app)
                     glUniform1i(loc, 3);
 
                     glBindBufferRange(GL_UNIFORM_BUFFER, 0, app->cbuffer.handle, app->lights[i].globalParamsOffset, app->lights[i].globalParamsSize);
-
+                    glEnable(GL_CULL_FACE);
                     unsigned int idx = 1;
                     for (; idx < app->ColorAttachmentHandles.size(); ++idx)
                     {
                         glActiveTexture(GL_TEXTURE0 + (idx - 1));
                         glBindTexture(GL_TEXTURE_2D, app->ColorAttachmentHandles[idx]);
                     }
-                    glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_SHORT, 0);
 
                     if (app->lights[i].type == LightType::LightType_Directional) 
                     {
@@ -1200,6 +1201,7 @@ void Render(App* app)
                     else
                     {
                         glBindBufferRange(GL_UNIFORM_BUFFER, 1, app->cbuffer.handle, app->lights[i].localParamsOffset, app->lights[i].localParamsSize);
+                        glDisable(GL_CULL_FACE);
 
                         Model& model = app->models[app->lights[i].modelIndex];
                         Mesh& mesh = app->meshes[model.meshIdx];
@@ -1221,7 +1223,7 @@ void Render(App* app)
                         }
                     }
                 }
-
+                glEnable(GL_CULL_FACE);
                 glBindVertexArray(0);
                 glUseProgram(0);
                 //glEnable(GL_DEPTH_TEST);
@@ -1232,7 +1234,7 @@ void Render(App* app)
                 glBindFramebuffer(GL_FRAMEBUFFER, 0);
                 //glViewport(0, 0, app->displaySize.x, app->displaySize.y);
                 
-                glClearColor(0.1f, 0.1f, 0.1f, 1.0f);
+                glClearColor(0.0f, 0.0f, 0.0f, 1.0f);
                 glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
                 glEnable(GL_DEPTH_TEST);
                 //glDepthMask(GL_TRUE);

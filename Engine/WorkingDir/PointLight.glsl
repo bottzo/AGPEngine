@@ -74,15 +74,15 @@ void main()
 	vec3 depth = texture(uTextureDepth,tCoords).rgb;
 	vec3 position = texture(uTexturePos,tCoords).rgb;
 
-	//oColor = vec4(0.,0.,0.,1.);
+	oColor = vec4(albedo,1.);
 	float constant = uLight.direction.x;
 	float linear = uLight.direction.y;
 	float quadratic = uLight.direction.z;
 	float distance = length(lPosition - position);
 	float attenuation = 1.0 / (constant + linear*distance + quadratic*distance*distance);
-	vec3 lDir = normalize(lPosition - position);
+	vec3 lDir = normalize(lNormal);//normalize(lPosition - position);
 	float intensity = max(dot(normalize(normals), lDir),0.0) * attenuation;
-	oColor = vec4(uLight.color * intensity, 0.0);
+	oColor += vec4(uLight.color * intensity, 1.0);
 	//oColor = vec4(normals,1.);
 }
 #endif
