@@ -53,7 +53,8 @@ void main()
 
 	oColor = vec4(albedo,1.);
 	float intensity = max(dot(normals, normalize(uLight.direction)),0.0);
-	oColor += vec4( uLight.color * intensity, 0.0 );
+	oColor *= vec4( uLight.color * intensity, 1.0 );
+	//oColor = vec4(vec3(intensity), 1.0);
 }
 #endif
 #endif

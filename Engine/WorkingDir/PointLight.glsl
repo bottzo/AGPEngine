@@ -86,8 +86,9 @@ void main()
 	float distance = length(lPosition - position);
 	float attenuation = 1.0 / (constant + linear*distance + quadratic*distance*distance);
 	vec3 lDir = lNormal;//normalize(lPosition - position);
-	float intensity = max(dot(normalize(normals), lDir),0.0) * attenuation;
-	oColor += vec4(uLight.color * intensity, 1.0);
+	float intensity = max(dot(normalize(normals), lDir),0.0) * abs(attenuation);
+	oColor *= vec4(uLight.color * intensity, 1.0);
+	//oColor = vec4(vec3(intensity), 1.0);
 	//oColor = vec4(normals,1.);
 }
 #endif

@@ -863,7 +863,7 @@ void Init(App* app)
     //    one.localParamsSize = 0;
     //    app->entities.push_back(one);
     //}
-    glm::mat4 world = TransformPositionScale(vec3(0.f, 0.f, -15.f), vec3(0.45f));
+    glm::mat4 world = TransformPositionScale(vec3(0.f, 0.f, 0.f), vec3(0.45f));
     Entity one = {};
     one.worldMatrix = world;
     one.modelIndex = app->models.size() - 1;
@@ -883,8 +883,9 @@ void Init(App* app)
     //app->lights.push_back({vec3(1,1,1), vec3(1,-1,-1), vec3(0,0,0), LightType_Directional });
     //TODO: Load screen filling quad model to models for the directional
     float radius = 9.f;
-    //app->lights.push_back({ vec3(1,1,1), vec3(0,1,-1), radius , LightType::LightType_Directional, TransformScale(vec3(1.f)), sphereModelIdx, 0, 0, 0, 0});
-    app->lights.push_back({ vec3(1,1,1), GetAttenuationValuesFromRange(radius), radius , LightType::LightType_Point, TransformPositionScale(vec3(0.f, 0.f, 0.f), vec3(radius)), sphereModelIdx, 0, 0, 0, 0 });
+    app->lights.push_back({ vec3(0,1,1), vec3(0,1,-1), radius , LightType::LightType_Directional, TransformScale(vec3(1.f)), sphereModelIdx, 0, 0, 0, 0});
+    app->lights.push_back({ vec3(0,0,1), GetAttenuationValuesFromRange(radius), radius , LightType::LightType_Point, TransformPositionScale(vec3(3.f, 0.f, 0.f), vec3(radius)), sphereModelIdx, 0, 0, 0, 0 });
+    app->lights.push_back({ vec3(0,1,0), GetAttenuationValuesFromRange(radius), radius , LightType::LightType_Point, TransformPositionScale(vec3(-3.f, 0.f, 0.f), vec3(radius)), sphereModelIdx, 0, 0, 0, 0 });
 
     glBindFramebuffer(GL_FRAMEBUFFER, app->framebufferHandle);
     glStencilMask(0x00);
@@ -1172,7 +1173,7 @@ void Render(App* app)
                 glBlendEquation(GL_FUNC_ADD);
                 glBlendFunc(GL_ONE, GL_ONE);
 
-                glClear(GL_COLOR_BUFFER_BIT | GL_STENCIL_BUFFER_BIT);
+                glClear(GL_COLOR_BUFFER_BIT |GL_STENCIL_BUFFER_BIT);
 
                 for (int i = 0; i < app->lights.size(); ++i)
                 {
