@@ -27,7 +27,6 @@ struct Light
 };
 layout(binding = 0, std140) uniform GlobalParams
 {
-	mat4 uViewMatrix;
 	Light uLight;
 };
 
@@ -35,12 +34,12 @@ void main()
 {
 	lTexCoord = aTexCoord;
 	vec3 lFrag = vec3(uWorldMatrix * vec4(aPosition, 1.0) );
-	lNormal = normalize(vec3( uWorldMatrix * vec4(aNormal, 0.0) ));
+	lNormal = normalize(vec3( uWorldMatrix * vec4(aNormal, 0.0)));
 
 	//center of the sphere
 	lPosition.xyz = lFrag + (-lNormal * uLight.radius);
 	//counter position of the sphere
-	vec3 lFragCounter = lFrag + -lNormal * uLight.radius * 2.;
+	//vec3 lFragCounter = lFrag + -lNormal * uLight.radius * 2.;
 
 	gl_Position = uWorldViewProjectionMatrix * vec4(aPosition, 1.0);
 }
@@ -59,7 +58,6 @@ struct Light
 };
 layout(binding = 0, std140) uniform GlobalParams
 {
-	mat4 uViewMatrix;
 	Light uLight;
 };
 
@@ -85,11 +83,10 @@ void main()
 	float quadratic = uLight.direction.z;
 	float distance = length(lPosition - position);
 	float attenuation = 1.0 / (constant + linear*distance + quadratic*distance*distance);
-	vec3 lDir = lNormal;//normalize(lPosition - position);
-	float intensity = max(dot(normalize(normals), lDir),0.0) * abs(attenuation);
+	vec3 lDir = normalize(lPosition - position);//lNormal;
+	float intensity = max(dot(normals, lDir),0.0) * attenuation;
 	oColor *= vec4(uLight.color * intensity, 1.0);
 	//oColor = vec4(vec3(intensity), 1.0);
-	//oColor = vec4(normals,1.);
 }
 #endif
 #endif

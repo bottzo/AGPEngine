@@ -831,6 +831,8 @@ void Init(App* app)
     LoadProgramAttributes(app->programs[app->directionalLightIdx]);
     app->pointLightIdx = LoadProgram(app, "PointLight.glsl", "POINT_LIGHT");
     LoadProgramAttributes(app->programs[app->pointLightIdx]);
+    app->noFragmentIdx = LoadProgram(app, "NoFragment.glsl", "NO_FRAGMENT");
+    LoadProgramAttributes(app->programs[app->noFragmentIdx]);
 
     //for the screen quad
     LoadTexturesQuad(app);
@@ -849,27 +851,27 @@ void Init(App* app)
     glBufferData(GL_UNIFORM_BUFFER, app->cbuffer.size, NULL, GL_STREAM_DRAW);
     glBindBuffer(GL_UNIFORM_BUFFER, 0);
 
-    //float x = -2.6f;
-    //float z = -1.5f;
-    ////Load x patrick entities
-    //for (int i = 0; i < 3; ++i) {
-    //    glm::mat4 world = TransformPositionScale(vec3(x, 1.5f, z), vec3(0.45f));
-    //    x += 3;
-    //    z -= 3;
-    //    Entity one = {};
-    //    one.worldMatrix = world;
-    //    one.modelIndex = app->models.size() - 1;
-    //    one.localParamsOffset = 0;
-    //    one.localParamsSize = 0;
-    //    app->entities.push_back(one);
-    //}
-    glm::mat4 world = TransformPositionScale(vec3(0.f, 0.f, 0.f), vec3(0.45f));
-    Entity one = {};
-    one.worldMatrix = world;
-    one.modelIndex = app->models.size() - 1;
-    one.localParamsOffset = 0;
-    one.localParamsSize = 0;
-    app->entities.push_back(one);
+    float x = -2.6f;
+    float z = -1.5f;
+    //Load x patrick entities
+    for (int i = 0; i < 3; ++i) {
+        glm::mat4 world = TransformPositionScale(vec3(x, 1.5f, z), vec3(0.45f));
+        x += 3;
+        z -= 3;
+        Entity one = {};
+        one.worldMatrix = world;
+        one.modelIndex = app->models.size() - 1;
+        one.localParamsOffset = 0;
+        one.localParamsSize = 0;
+        app->entities.push_back(one);
+    }
+    //glm::mat4 world = TransformPositionScale(vec3(0.f, 0.f, 0.f), vec3(0.45f));
+    //Entity one = {};
+    //one.worldMatrix = world;
+    //one.modelIndex = app->models.size() - 1;
+    //one.localParamsOffset = 0;
+    //one.localParamsSize = 0;
+    //app->entities.push_back(one);
 
     u32 sphereModelIdx = CreateSphere(app);
     //Entity sphere = {};
@@ -882,18 +884,14 @@ void Init(App* app)
     //loading lights
     //app->lights.push_back({vec3(1,1,1), vec3(1,-1,-1), vec3(0,0,0), LightType_Directional });
     //TODO: Load screen filling quad model to models for the directional
-    float radius = 9.f;
-    app->lights.push_back({ vec3(0,1,1), vec3(0,1,-1), radius , LightType::LightType_Directional, TransformScale(vec3(1.f)), sphereModelIdx, 0, 0, 0, 0});
-    app->lights.push_back({ vec3(0,0,1), GetAttenuationValuesFromRange(radius), radius , LightType::LightType_Point, TransformPositionScale(vec3(3.f, 0.f, 0.f), vec3(radius)), sphereModelIdx, 0, 0, 0, 0 });
-    app->lights.push_back({ vec3(0,1,0), GetAttenuationValuesFromRange(radius), radius , LightType::LightType_Point, TransformPositionScale(vec3(-3.f, 0.f, 0.f), vec3(radius)), sphereModelIdx, 0, 0, 0, 0 });
+    float radius = 65.f;
+    app->lights.push_back({ vec3(0,.5,1), GetAttenuationValuesFromRange(radius), radius , LightType::LightType_Point, TransformPositionScale(vec3(0.f, -2.f, 0.f), vec3(radius)), sphereModelIdx, 0, 0, 0, 0 });
+    app->lights.push_back({ vec3(0,1,0), GetAttenuationValuesFromRange(radius), radius , LightType::LightType_Point, TransformPositionScale(vec3(2.f, 0.f, 0.f), vec3(radius)), sphereModelIdx, 0, 0, 0, 0 });
+    app->lights.push_back({ vec3(0,0,1), GetAttenuationValuesFromRange(radius), radius , LightType::LightType_Point, TransformPositionScale(vec3(-2.f, 0.f, 0.f), vec3(radius)), sphereModelIdx, 0, 0, 0, 0 });
+    app->lights.push_back({ vec3(1,1,1), vec3(0,1,-1), radius , LightType::LightType_Directional, TransformScale(vec3(1.f)), sphereModelIdx, 0, 0, 0, 0 });
 
-    glBindFramebuffer(GL_FRAMEBUFFER, app->framebufferHandle);
-    glStencilMask(0x00);
-    glDisable(GL_STENCIL_TEST);
-    glStencilFunc(GL_ALWAYS, 1, 0xFF);
-    glStencilOpSeparate(GL_BACK, GL_KEEP, GL_INCR, GL_KEEP);
-    glStencilOpSeparate(GL_FRONT, GL_KEEP, GL_DECR, GL_KEEP);
-    glBindFramebuffer(GL_FRAMEBUFFER, 0);
+    glEnable(GL_CULL_FACE);
+    glCullFace(GL_BACK);
 }
 
 void Gui(App* app)
@@ -996,10 +994,10 @@ void Update(App* app)
     
     for (u32 i = 0; i < app->lights.size(); ++i)
     {
-        AlignHead(app->cbuffer, sizeof(vec4));
+        //AlignHead(app->cbuffer, sizeof(vec4));
+        AlignHead(app->cbuffer, app->uniformBlockAlignment);
         app->lights[i].globalParamsOffset = app->cbuffer.head;
         
-        PushMat4(app->cbuffer, view);
         Light& light = app->lights[i];
         PushVec3(app->cbuffer, light.color);
         PushVec3(app->cbuffer, light.direction);
@@ -1128,13 +1126,14 @@ void Render(App* app)
                 glDrawBuffers(5, buffers);
                 
                 glClearColor(0.0f, 0.0f, 0.0f, 1.0f);
-                glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT | GL_STENCIL_BUFFER_BIT);
-                //glViewport(0, 0, app->displaySize.x, app->displaySize.y);
-
+                glStencilMask(0xff);
+                glDepthMask(0xff);
                 glEnable(GL_DEPTH_TEST);
                 glDepthMask(GL_TRUE);
                 glDisable(GL_BLEND);
-                glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+                //glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+
+                glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT | GL_STENCIL_BUFFER_BIT);
                 
                 //Geometry pass
                 Program& textureMeshProgram = app->programs[app->geometryPassIdx];
@@ -1168,7 +1167,7 @@ void Render(App* app)
                 glUseProgram(0);
                 glDrawBuffer(GL_COLOR_ATTACHMENT0);
                 glDepthMask(GL_FALSE);
-                //glDisable(GL_DEPTH_TEST);
+                glDisable(GL_DEPTH_TEST);
                 glEnable(GL_BLEND);
                 glBlendEquation(GL_FUNC_ADD);
                 glBlendFunc(GL_ONE, GL_ONE);
@@ -1217,44 +1216,61 @@ void Render(App* app)
                     {
                         glBindBufferRange(GL_UNIFORM_BUFFER, 1, app->cbuffer.handle, app->lights[i].localParamsOffset, app->lights[i].localParamsSize);
                         glDisable(GL_CULL_FACE);
+                        glEnable(GL_DEPTH_TEST); //glDepthMask(GL_FALSE);
                         glEnable(GL_STENCIL_TEST);
-                        glStencilMask(0xFF);
+                        glStencilMask(GL_TRUE);
+                        glStencilFunc(GL_ALWAYS, 0, 0);
+                        glStencilOpSeparate(GL_BACK, GL_KEEP, GL_INCR_WRAP, GL_KEEP);
+                        glStencilOpSeparate(GL_FRONT, GL_KEEP, GL_DECR_WRAP, GL_KEEP);
+                        //glColorMask(GL_FALSE, GL_FALSE, GL_FALSE, GL_FALSE);
+                        glDrawBuffer(GL_NONE);
+                        
+                        glUseProgram(app->programs[app->noFragmentIdx].handle);
                         Model& model = app->models[app->lights[i].modelIndex];
                         Mesh& mesh = app->meshes[model.meshIdx];
-                        for (u32 i = 0; i < mesh.submeshes.size(); ++i) {
-                            GLuint vao = FindVAO(mesh, i, *currProgram);
+                        for (u32 j = 0; j < mesh.submeshes.size(); ++j) {
+                            GLuint vao = FindVAO(mesh, j, *currProgram);
+                            glBindVertexArray(vao);
+                        
+                            Submesh& submesh = mesh.submeshes[j];
+                            glDrawElements(GL_TRIANGLES, submesh.indices.size(), GL_UNSIGNED_INT, (void*)(u64)submesh.indexOffset);
+                        }
+
+                        //glColorMask(GL_TRUE, GL_TRUE, GL_TRUE, GL_TRUE);
+                        glDrawBuffer(GL_COLOR_ATTACHMENT0);
+                        glStencilFunc(GL_NOTEQUAL, 0, 0xFF);
+                        glStencilMask(GL_FALSE);
+                        glEnable(GL_CULL_FACE);
+                        glCullFace(GL_FRONT);
+                        glDisable(GL_DEPTH_TEST);
+
+                        glUseProgram(currProgram->handle);
+                        model = app->models[app->lights[i].modelIndex];
+                        mesh = app->meshes[model.meshIdx];
+                        for (u32 j = 0; j < mesh.submeshes.size(); ++j) {
+                            GLuint vao = FindVAO(mesh, j, *currProgram);
                             glBindVertexArray(vao);
 
-                            //unsigned int idx = 1;
-                            //for (; idx < app->ColorAttachmentHandles.size(); ++idx)
-                            //{
-                            //    glActiveTexture(GL_TEXTURE0 + (idx - 1));
-                            //    glBindTexture(GL_TEXTURE_2D, app->ColorAttachmentHandles[idx]);
-                            //}
-                            //glUniform1i(app->programUniformTexture, 0);
-                            //glUniformMatrix4fv(glGetUniformLocation(textureMeshProgram.handle, "MVP"), 1, GL_FALSE, glm::value_ptr(app->MVP));
-
-                            Submesh& submesh = mesh.submeshes[i];
+                            Submesh& submesh = mesh.submeshes[j];
                             glDrawElements(GL_TRIANGLES, submesh.indices.size(), GL_UNSIGNED_INT, (void*)(u64)submesh.indexOffset);
-                            glEnable(GL_CULL_FACE);
-                            glDisable(GL_STENCIL_TEST);
-                            glStencilMask(0x00);
                         }
+
+                        glCullFace(GL_BACK);
+                        glDisable(GL_STENCIL_TEST);
+                        glStencilMask(GL_TRUE);
+                        glClear(GL_STENCIL_BUFFER_BIT);
                     }
                 }
                 glBindVertexArray(0);
                 glUseProgram(0);
-                //glEnable(GL_DEPTH_TEST);
-                glDepthMask(GL_TRUE);
-                //glDisable(GL_BLEND);
                 
                 //screen render pass
                 glBindFramebuffer(GL_FRAMEBUFFER, 0);
-                //glViewport(0, 0, app->displaySize.x, app->displaySize.y);
                 
                 glClearColor(0.0f, 0.0f, 0.0f, 1.0f);
                 glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-                glEnable(GL_DEPTH_TEST);
+                //glDisable(GL_DEPTH_TEST);
+                //glDepthMask(GL_TRUE);
                 //glDepthMask(GL_TRUE);
                 glDisable(GL_BLEND);
                 
@@ -1264,8 +1280,6 @@ void Render(App* app)
                 //glUniform1i(app->programUniformTexture, 0);
                 glActiveTexture(GL_TEXTURE0);
                 glBindTexture(GL_TEXTURE_2D, app->currentAttachmentTextureHandle);
-                //glActiveTexture(GL_TEXTURE1);
-                //glBindTexture(GL_TEXTURE_2D, app->colorAttachmentHandle0);
                 glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_SHORT, 0);
                 glBindTexture(GL_TEXTURE_2D, 0);
                 glBindVertexArray(0);
@@ -1277,4 +1291,3 @@ void Render(App* app)
         default:;
     }
 }
-

@@ -185,6 +185,7 @@ struct App
     u32 geometryPassIdx;
     u32 directionalLightIdx;
     u32 pointLightIdx;
+    u32 noFragmentIdx;
     
     // texture indices
     u32 diceTexIdx;

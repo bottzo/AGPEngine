@@ -31,7 +31,6 @@ struct Light
 };
 layout(binding = 0, std140) uniform GlobalParams
 {
-	mat4 uViewMatrix;
 	Light uLight;
 };
 

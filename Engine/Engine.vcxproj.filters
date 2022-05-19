@@ -121,5 +121,8 @@
     <None Include="WorkingDir\GeometryPass.glsl">
       <Filter>Shaders</Filter>
     </None>
+    <None Include="WorkingDir\NoFragment.glsl">
+      <Filter>Shaders</Filter>
+    </None>
   </ItemGroup>
 </Project>
