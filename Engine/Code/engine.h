@@ -178,6 +178,8 @@ struct App
     std::vector<Entity> entities;
     std::vector<Light> lights;
 
+    //Model indices
+    u32 sphereModelIdx;
 
     // program indices
     u32 texturedGeometryProgramIdx;
@@ -233,3 +235,6 @@ void Update(App* app);
 void Render(App* app);
 
 u32 LoadTexture2D(App* app, const char* filepath);
+glm::mat4 TransformScale(const glm::vec3& scaleFactors);
+glm::mat4 TransformPositionScale(const glm::vec3& pos, const glm::vec3& scaleFactor);
+constexpr vec3 GetAttenuationValuesFromRange(unsigned int range);

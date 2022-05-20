@@ -1,13 +1,7 @@
-//
-// engine.cpp : Put all your graphics stuff in this file. This is kind of the graphics module.
-// In here, you should type all your OpenGL commands, and you can also type code to handle
-// input platform events (e.g to move the camera or react to certain shortcuts), writing some
-// graphics related GUI options, and so on.
-//
-
 #include "engine.h"
 #include "buffer_management.h"
 #include "assimp_model_loading.h"
+#include "engine_ui.h"
 #include <imgui.h>
 #include <stb_image.h>
 #include <stb_image_write.h>
@@ -873,7 +867,7 @@ void Init(App* app)
     //one.localParamsSize = 0;
     //app->entities.push_back(one);
 
-    u32 sphereModelIdx = CreateSphere(app);
+    app->sphereModelIdx = CreateSphere(app);
     //Entity sphere = {};
     //sphere.worldMatrix = TransformPositionScale(vec3(0.4f, 0.f, 1.5f), vec3(1.f));
     //sphere.modelIndex = sphereModelIdx;
@@ -885,10 +879,10 @@ void Init(App* app)
     //app->lights.push_back({vec3(1,1,1), vec3(1,-1,-1), vec3(0,0,0), LightType_Directional });
     //TODO: Load screen filling quad model to models for the directional
     float radius = 65.f;
-    app->lights.push_back({ vec3(0,.5,1), GetAttenuationValuesFromRange(radius), radius , LightType::LightType_Point, TransformPositionScale(vec3(0.f, -2.f, 0.f), vec3(radius)), sphereModelIdx, 0, 0, 0, 0 });
-    app->lights.push_back({ vec3(0,1,0), GetAttenuationValuesFromRange(radius), radius , LightType::LightType_Point, TransformPositionScale(vec3(2.f, 0.f, 0.f), vec3(radius)), sphereModelIdx, 0, 0, 0, 0 });
-    app->lights.push_back({ vec3(0,0,1), GetAttenuationValuesFromRange(radius), radius , LightType::LightType_Point, TransformPositionScale(vec3(-2.f, 0.f, 0.f), vec3(radius)), sphereModelIdx, 0, 0, 0, 0 });
-    app->lights.push_back({ vec3(1,1,1), vec3(0,1,-1), radius , LightType::LightType_Directional, TransformScale(vec3(1.f)), sphereModelIdx, 0, 0, 0, 0 });
+    app->lights.push_back({ vec3(0,.5,1), GetAttenuationValuesFromRange(radius), radius , LightType::LightType_Point, TransformPositionScale(vec3(0.f, 1.f, 0.f), vec3(radius)), app->sphereModelIdx, 0, 0, 0, 0 });
+    app->lights.push_back({ vec3(0,1,0), GetAttenuationValuesFromRange(radius), radius , LightType::LightType_Point, TransformPositionScale(vec3(1.f, 0.f, 0.f), vec3(radius)), app->sphereModelIdx, 0, 0, 0, 0 });
+    app->lights.push_back({ vec3(0,0,1), GetAttenuationValuesFromRange(radius), radius , LightType::LightType_Point, TransformPositionScale(vec3(-1.f, 0.f, 0.f), vec3(radius)), app->sphereModelIdx, 0, 0, 0, 0 });
+    app->lights.push_back({ vec3(1,1,1), vec3(0,1,-1), radius , LightType::LightType_Directional, TransformScale(vec3(1.f)), app->sphereModelIdx, 0, 0, 0, 0 });
 
     glEnable(GL_CULL_FACE);
     glCullFace(GL_BACK);
@@ -897,70 +891,12 @@ void Init(App* app)
 void Gui(App* app)
 {
     //DOCKING
-    ImGuiWindowFlags window_flags = ImGuiWindowFlags_MenuBar;
-    ImGuiViewport* viewport = ImGui::GetMainViewport();
-    ImGui::SetNextWindowPos(viewport->Pos);
-    ImGui::SetNextWindowSize(viewport->Size);
-    ImGui::SetNextWindowViewport(viewport->ID);
-    ImGui::PushStyleVar(ImGuiStyleVar_WindowRounding, 0.0f);
-    ImGui::PushStyleVar(ImGuiStyleVar_WindowBorderSize, 0.0f);
-    window_flags |= ImGuiWindowFlags_NoTitleBar | ImGuiWindowFlags_NoCollapse | ImGuiWindowFlags_NoResize | ImGuiWindowFlags_NoMove;
-    window_flags |= ImGuiWindowFlags_NoNavFocus | ImGuiWindowFlags_NoBringToFrontOnFocus | ImGuiWindowFlags_NoBackground;
-    ImGui::PushStyleVar(ImGuiStyleVar_WindowPadding, ImVec2(0.0f, 0.0f));
-    static bool docking = true;
-    if (ImGui::Begin("DockSpace", &docking, window_flags)) {
-        // DockSpace
-        ImGui::PopStyleVar(3);
-        if (docking)
-        {
-            ImGuiID dockspace_id = ImGui::GetID("DockSpace");
-            ImGui::DockSpace(dockspace_id, ImVec2(0.0f, 0.0f), ImGuiDockNodeFlags_PassthruCentralNode);
-        }
-
-        ImGui::End();
-    }
+    InitializeDocking();
 
     ImGui::Begin("Info");
-    ImGui::Text("FPS: %f", 1.0f/app->deltaTime);
-    char strMem[8];
-    char* currentValue = strMem;
-    switch (app->currentAttachmentType)
-    {
-    case AttachmentOutputs::SCENE: currentValue = (char*)"SCENE"; break;
-    case AttachmentOutputs::ALBEDO: currentValue = (char*)"ALBEDO"; break;
-    case AttachmentOutputs::NORMALS: currentValue = (char*)"NORMALS"; break;
-    case AttachmentOutputs::DEPTH: currentValue = (char*)"DEPTH"; break;
-    case AttachmentOutputs::POSITION: currentValue = (char*)"POSITION"; break;
-    default:
-        break;
-    }
-    if (ImGui::BeginCombo("##Screen Output", currentValue, ImGuiComboFlags_PopupAlignLeft))
-    {
-        if (ImGui::Selectable("SCENE")) {
-            app->currentAttachmentTextureHandle = app->ColorAttachmentHandles[0];
-            app->currentAttachmentType = AttachmentOutputs::SCENE;
-        }
-        if (ImGui::Selectable("ALBEDO")) {
-            app->currentAttachmentTextureHandle = app->ColorAttachmentHandles[1];
-            app->currentAttachmentType = AttachmentOutputs::ALBEDO;
-        }
-        if (ImGui::Selectable("NORMALS")) {
-            app->currentAttachmentTextureHandle = app->ColorAttachmentHandles[2];
-            app->currentAttachmentType = AttachmentOutputs::NORMALS;
-        }
-        if (ImGui::Selectable("DEPTH")) {
-            app->currentAttachmentTextureHandle = app->ColorAttachmentHandles[3];
-            app->currentAttachmentType = AttachmentOutputs::DEPTH;
-        }
-        if (ImGui::Selectable("POSITION")) {
-            app->currentAttachmentTextureHandle = app->ColorAttachmentHandles[4];
-            app->currentAttachmentType = AttachmentOutputs::POSITION;
-        }
-        ImGui::EndCombo();
-    }
-    ImGui::Separator();
-    ImGui::DragFloat3("Camera Position", (float*)&app->cameraPos, 0.05f, 0.0f, 0.0f, "%.3f", NULL);       
-    ImGui::DragFloat3("Camera Rotation", (float*)&app->cameraRot, 0.1f, -360.0f, 360.0f, "%.3f", NULL);             
+    SelectFrameBufferTexture(app);
+    CameraSettings(app);
+    LightsSettings(app);
     ImGui::End();
 }
 

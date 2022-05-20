@@ -42,9 +42,6 @@
     <ClCompile Include="ThirdParty\glad\include\glad\glad.c">
       <Filter>Glad</Filter>
     </ClCompile>
-    <ClCompile Include="Code\engine.cpp">
-      <Filter>Engine</Filter>
-    </ClCompile>
     <ClCompile Include="Code\platform.cpp">
       <Filter>Engine</Filter>
     </ClCompile>
@@ -55,6 +52,12 @@
       <Filter>Engine</Filter>
     </ClCompile>
     <ClCompile Include="Code\buffer_management.cpp">
+      <Filter>Engine</Filter>
+    </ClCompile>
+    <ClCompile Include="Code\engine.cpp">
+      <Filter>Engine</Filter>
+    </ClCompile>
+    <ClCompile Include="Code\engine_ui.cpp">
       <Filter>Engine</Filter>
     </ClCompile>
   </ItemGroup>
@@ -83,9 +86,6 @@
     <ClInclude Include="ThirdParty\imgui-docking\imstb_truetype.h">
       <Filter>ImGui</Filter>
     </ClInclude>
-    <ClInclude Include="Code\engine.h">
-      <Filter>Engine</Filter>
-    </ClInclude>
     <ClInclude Include="ThirdParty\glad\include\glad\glad.h">
       <Filter>Glad</Filter>
     </ClInclude>
@@ -102,6 +102,12 @@
       <Filter>Engine</Filter>
     </ClInclude>
     <ClInclude Include="Code\buffer_management.h">
+      <Filter>Engine</Filter>
+    </ClInclude>
+    <ClInclude Include="Code\engine.h">
+      <Filter>Engine</Filter>
+    </ClInclude>
+    <ClInclude Include="Code\engine_ui.h">
       <Filter>Engine</Filter>
     </ClInclude>
   </ItemGroup>
