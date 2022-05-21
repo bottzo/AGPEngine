@@ -33,6 +33,12 @@ layout(binding = 0, std140) uniform GlobalParams
 {
 	Light uLight;
 };
+layout(binding = 2, std140) uniform CameraParams
+{
+	vec3 cameraPos;
+	float zNear;
+	float zFar;
+};
 
 uniform sampler2D uTextureAlb;
 uniform sampler2D uTextureNorm;
@@ -50,10 +56,28 @@ void main()
 	vec3 depth = texture(uTextureDepth,tCoords).rgb;
 	vec3 position = texture(uTexturePos,tCoords).rgb;
 
+	vec3 lightDir = normalize(uLight.direction);
+
+	//diffuse
 	oColor = vec4(albedo,1.);
-	float intensity = max(dot(normals, normalize(uLight.direction)),0.0);
-	oColor *= vec4( uLight.color * intensity, 1.0 );
-	//oColor = vec4(vec3(intensity), 1.0);
+	float intensity = max(dot(normals, lightDir),0.0);
+	vec3 difCol = uLight.color * intensity;
+
+	//specular
+	float matSpecularity = 160.;
+	vec3 cameraFragDir = normalize(cameraPos - position);
+	vec3 reflectDir = normalize(reflect(lightDir, normals));
+	float spec = dot(cameraFragDir, reflectDir);
+	//spec = clamp(spec,0.,1.);
+	vec3 specCol = vec3(0.);
+	if (spec > 0) {
+		spec = pow(spec, matSpecularity);
+		specCol = uLight.color * spec;
+	}
+	
+	oColor *= vec4(specCol * 0.2f + difCol * 0.8f, 1.); 
+
+	//oColor = vec4(specCol, 1.0);
 }
 #endif
 #endif

@@ -891,6 +891,8 @@ void Gui(App* app)
     InitializeDocking();
 
     ImGui::Begin("Info");
+    ImGui::Separator();
+    ImGui::Text("FPS: %f", 1.0f / app->deltaTime);
     SelectFrameBufferTexture(app);
     CameraSettings(app);
     LightsSettings(app);
@@ -902,9 +904,7 @@ void Gui(App* app)
 void Update(App* app)
 {
     float aspectRario = (float)app->displaySize.x / (float)app->displaySize.y;
-    float znear = 0.1f;
-    float zfar = 100.0f;
-    glm::mat4 projection = glm::perspective(glm::radians(60.f), aspectRario, znear, zfar);
+    glm::mat4 projection = glm::perspective(glm::radians(60.f), aspectRario, app->zNear, app->zFar);
     //glm::mat4 view = glm::lookAt(app->cameraPos, glm::vec3(0.0f), glm::vec3(0.f, 1.f, 0.f));
     glm::mat4 view = glm::translate(app->cameraPos);
     view = glm::rotate(view, app->cameraRot.x * DEGTORAD, glm::vec3(1.f, 0.f, 0.f));
@@ -920,15 +920,19 @@ void Update(App* app)
 
     // -- Global Params
     //TODO: cal pujar els global params cada frame???
-    app->globalParamsOffset = app->cbuffer.head;
-    //PushVec3(app->cbuffer, app->cameraPos);
+    AlignHead(app->cbuffer, app->uniformBlockAlignment);
+    app->cameraParamsOffset = app->cbuffer.head;
+    PushVec3(app->cbuffer, app->cameraPos);
+    PushFloat(app->cbuffer, app->zNear);
+    PushFloat(app->cbuffer, app->zFar);
     //PushUInt(app->cbuffer, app->lights.size());
+    app->cameraParamsSize = app->cbuffer.head - app->cameraParamsOffset;
     
     for (u32 i = 0; i < app->lights.size(); ++i)
     {
         //AlignHead(app->cbuffer, sizeof(vec4));
         AlignHead(app->cbuffer, app->uniformBlockAlignment);
-        app->lights[i].globalParamsOffset = app->cbuffer.head;
+        app->lights[i].lightParamsOffset = app->cbuffer.head;
         
         Light& light = app->lights[i];
         PushVec3(app->cbuffer, light.color);
@@ -936,9 +940,8 @@ void Update(App* app)
         //PushVec3(app->cbuffer, light.position);
         //PushUInt(app->cbuffer, light.type);
         PushFloat(app->cbuffer, light.radius);
-        app->lights[i].globalParamsSize = app->cbuffer.head - app->lights[i].globalParamsOffset;
+        app->lights[i].lightParamsSize = app->cbuffer.head - app->lights[i].lightParamsOffset;
     }
-    app->globalParamsSize = app->cbuffer.head - app->globalParamsOffset;
 
     // -- Local Params
     for (int i = 0; i<app->entities.size(); ++i)
@@ -1070,7 +1073,8 @@ void Render(App* app)
                 Program& textureMeshProgram = app->programs[app->geometryPassIdx];
                 glUseProgram(textureMeshProgram.handle);
                 //binding global uniform buffer params
-                //glBindBufferRange(GL_UNIFORM_BUFFER, 0, app->cbuffer.handle, app->globalParamsOffset, app->globalParamsSize);
+                //glBindBufferRange(GL_UNIFORM_BUFFER, 0, app->cbuffer.handle, app->globalParamsOffset, app->globalParamsSize)
+                glBindBufferRange(GL_UNIFORM_BUFFER, 2, app->cbuffer.handle, app->cameraParamsOffset, app->cameraParamsSize);;
                 for(Entity entity : app->entities)
                 {
                     //binding local uniform buffer params
@@ -1105,6 +1109,7 @@ void Render(App* app)
 
                 glClear(GL_COLOR_BUFFER_BIT |GL_STENCIL_BUFFER_BIT);
 
+                //glBindBufferRange(GL_UNIFORM_BUFFER, 2, app->cbuffer.handle, app->cameraParamsOffset, app->cameraParamsSize);
                 for (int i = 0; i < app->lights.size(); ++i)
                 {
                     Program* currProgram = &app->programs[app->directionalLightIdx];
@@ -1124,7 +1129,7 @@ void Render(App* app)
                     loc = glGetUniformLocation(currProgram->handle, "uTexturePos");
                     glUniform1i(loc, 3);
 
-                    glBindBufferRange(GL_UNIFORM_BUFFER, 0, app->cbuffer.handle, app->lights[i].globalParamsOffset, app->lights[i].globalParamsSize);
+                    glBindBufferRange(GL_UNIFORM_BUFFER, 0, app->cbuffer.handle, app->lights[i].lightParamsOffset, app->lights[i].lightParamsSize);
                     unsigned int idx = 1;
                     for (; idx < app->ColorAttachmentHandles.size(); ++idx)
                     {

@@ -30,7 +30,7 @@ void InitializeDocking()
 
 void SelectFrameBufferTexture(App*app)
 {
-    ImGui::Text("FPS: %f", 1.0f / app->deltaTime);
+    ImGui::Text("Framebuffer output");
     char strMem[8];
     char* currentValue = strMem;
     switch (app->currentAttachmentType)
@@ -72,8 +72,11 @@ void SelectFrameBufferTexture(App*app)
 
 void CameraSettings(App* app)
 {
+    ImGui::Text("Camera Settings");
     ImGui::DragFloat3("Camera Position", (float*)&app->cameraPos, 0.05f, 0.0f, 0.0f, "%.3f", NULL);
     ImGui::DragFloat3("Camera Rotation", (float*)&app->cameraRot, 0.1f, -360.0f, 360.0f, "%.3f", NULL);
+    ImGui::DragFloat("Camera Near", (float*)&app->zNear, 0.1f, 0.2f, 4000.0f, "%.3f", NULL);
+    ImGui::DragFloat("Camera Far", (float*)&app->zFar, 0.1f, 0.05f, 3999.0f, "%.3f", NULL);
     ImGui::Separator();
 }
 
@@ -157,7 +160,7 @@ void EntitiesSetings(App* app)
             ImGui::Text(entity.name.c_str());
             char buffer[128];
             strcpy_s(buffer, entity.name.c_str());
-            if (ImGui::InputText((entity.name + std::to_string(i)).c_str(), buffer, (int)(sizeof(buffer) / sizeof(char))))
+            if (ImGui::InputText((entity.name + std::to_string(i)).c_str(), buffer, (int)(sizeof(buffer) / sizeof(char)), ImGuiInputTextFlags_EnterReturnsTrue | ImGuiInputTextFlags_AutoSelectAll))
                 entity.name = buffer;
             glm::vec3 prevPos = entity.pos;
             if (ImGui::DragFloat3(("pos " + entity.name).c_str(), (float*)&entity.pos, 0.05f, 0.0f, 0.0f, "%.3f", NULL))

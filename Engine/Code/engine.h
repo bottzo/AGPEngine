@@ -131,8 +131,8 @@ struct Light
     u32 modelIndex;
     u32 localParamsOffset;
     u32 localParamsSize;
-    u32 globalParamsOffset;
-    u32 globalParamsSize;
+    u32 lightParamsOffset;
+    u32 lightParamsSize;
 };
 
 struct Buffer
@@ -212,8 +212,8 @@ struct App
     GLuint programUniformTexture;
     GLuint patrickProgramUniform;
     int uniformBlockAlignment;
-    u32 globalParamsOffset;
-    u32 globalParamsSize;
+    u32 cameraParamsOffset;
+    u32 cameraParamsSize;
     Buffer cbuffer;
 
     // VAO object to link our screen filling quad with our textured quad shader
@@ -225,8 +225,11 @@ struct App
     std::vector<GLuint> ColorAttachmentHandles;
     GLuint depthAttachmentHandle = 0;
 
+    //Camera Settings
     glm::vec3 cameraPos = glm::vec3(0.f, 0.f, -4.f);
     glm::vec3 cameraRot = glm::vec3(0.f);
+    float zNear = 0.1f;
+    float zFar = 100.f;
 };
 
 void Init(App* app);
