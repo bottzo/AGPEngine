@@ -90,9 +90,13 @@ struct Mesh {
 
 struct Entity {
     glm::mat4 worldMatrix;
+    glm::vec3 pos;
+    glm::vec3 rot;
+    glm::vec3 scale;
     u32 modelIndex;
     u32 localParamsOffset;
     u32 localParamsSize;
+    std::string name;
 };
 
 struct Material
@@ -207,7 +211,6 @@ struct App
     // Location of the texture uniform in the textured quad shader
     GLuint programUniformTexture;
     GLuint patrickProgramUniform;
-    float angle = 0;
     int uniformBlockAlignment;
     u32 globalParamsOffset;
     u32 globalParamsSize;

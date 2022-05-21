@@ -1,5 +1,6 @@
 #include "engine.h"
 #include <imgui.h>
+#include "engine_ui.h"
 
 void InitializeDocking()
 {
@@ -89,7 +90,7 @@ void LightsSettings(App* app)
                 {
                     std::string strLightIndex = std::to_string(i);
                     std::string strLightName = "Light " + strLightIndex;
-                    ImGui::Separator();
+                    ImGui::Spacing();
                     ImGui::Text(strLightName.c_str());
                     ImGui::ColorEdit3(("color " + strLightName).c_str(), (float*)&light.color, ImGuiColorEditFlags_NoAlpha);
                     ImGui::DragFloat3(("dir " + strLightName).c_str(), (float*)&light.direction, 0.05f, 0.0f, 0.0f, "%.3f", NULL);
@@ -112,7 +113,7 @@ void LightsSettings(App* app)
                 {
                     std::string strLightIndex = std::to_string(i);
                     std::string strLightName = "Light " + strLightIndex;
-                    ImGui::Separator();
+                    ImGui::Spacing();
                     ImGui::Text(strLightName.c_str());
                     ImGui::ColorEdit3(("color " + strLightName).c_str(), (float*)&light.color, ImGuiColorEditFlags_NoAlpha);
                     glm::vec3 pos = light.worldMatrix[3];
@@ -139,6 +140,48 @@ void LightsSettings(App* app)
             }
             ImGui::TreePop();
         }
+        ImGui::TreePop();
+    }
+    ImGui::Separator();
+}
+
+#define DEGTORAD 0.0174533f
+void EntitiesSetings(App* app)
+{
+    if (ImGui::TreeNodeEx("Entities"))
+    {
+        for (int i = 0; i < app->entities.size(); ++i)
+        {
+            Entity& entity = app->entities[i];
+            ImGui::Spacing();
+            ImGui::Text(entity.name.c_str());
+            char buffer[128];
+            strcpy_s(buffer, entity.name.c_str());
+            if (ImGui::InputText((entity.name + std::to_string(i)).c_str(), buffer, (int)(sizeof(buffer) / sizeof(char))))
+                entity.name = buffer;
+            glm::vec3 prevPos = entity.pos;
+            if (ImGui::DragFloat3(("pos " + entity.name).c_str(), (float*)&entity.pos, 0.05f, 0.0f, 0.0f, "%.3f", NULL))
+                entity.worldMatrix = glm::translate(entity.worldMatrix, entity.pos - prevPos);
+            glm::vec3 prevRot = entity.rot;
+            if (ImGui::DragFloat3(("rot " + entity.name).c_str(), (float*)&entity.rot, 0.3f, -360.f, 360.0f, "%.3f", NULL))
+            {
+                glm::vec3 rotation = (entity.rot - prevRot) * DEGTORAD;
+                entity.worldMatrix = glm::rotate(entity.worldMatrix, rotation.x, glm::vec3(1.f, 0.f, 0.f));
+                entity.worldMatrix = glm::rotate(entity.worldMatrix, rotation.y, glm::vec3(0.f, 1.f, 0.f));
+                entity.worldMatrix = glm::rotate(entity.worldMatrix, rotation.z, glm::vec3(0.f, 0.f, 1.f));
+            }
+            glm::vec3 prevScale = entity.scale;
+            if (ImGui::DragFloat3(("scale " + entity.name).c_str(), (float*)&entity.scale, 0.02f, 0.0f, 0.0f, "%.3f", NULL))
+            {
+                entity.worldMatrix = glm::scale(entity.worldMatrix, glm::vec3(1.f / prevScale));
+                entity.worldMatrix = glm::scale(entity.worldMatrix, entity.scale);
+            }
+            if (ImGui::Button(("Remove " + entity.name).c_str()))
+                app->entities.erase(app->entities.begin() + i);
+            ImGui::Separator();
+
+        }
+
         ImGui::TreePop();
     }
     ImGui::Separator();

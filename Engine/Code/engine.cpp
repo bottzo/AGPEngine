@@ -849,23 +849,20 @@ void Init(App* app)
     float z = -1.5f;
     //Load x patrick entities
     for (int i = 0; i < 3; ++i) {
-        glm::mat4 world = TransformPositionScale(vec3(x, 1.5f, z), vec3(0.45f));
-        x += 3;
-        z -= 3;
         Entity one = {};
-        one.worldMatrix = world;
+        one.pos = vec3(x, 1.5f, z);
+        one.rot = vec3(0.f);
+        one.scale = vec3(0.45f);
+        one.worldMatrix = TransformPositionScale(one.pos, one.scale);
         one.modelIndex = app->models.size() - 1;
         one.localParamsOffset = 0;
         one.localParamsSize = 0;
+        one.name = "Patrick " + std::to_string(i);
         app->entities.push_back(one);
+
+        x += 3;
+        z -= 3;
     }
-    //glm::mat4 world = TransformPositionScale(vec3(0.f, 0.f, 0.f), vec3(0.45f));
-    //Entity one = {};
-    //one.worldMatrix = world;
-    //one.modelIndex = app->models.size() - 1;
-    //one.localParamsOffset = 0;
-    //one.localParamsSize = 0;
-    //app->entities.push_back(one);
 
     app->sphereModelIdx = CreateSphere(app);
     //Entity sphere = {};
@@ -897,6 +894,7 @@ void Gui(App* app)
     SelectFrameBufferTexture(app);
     CameraSettings(app);
     LightsSettings(app);
+    EntitiesSetings(app);
     ImGui::End();
 }
 
@@ -912,8 +910,6 @@ void Update(App* app)
     view = glm::rotate(view, app->cameraRot.x * DEGTORAD, glm::vec3(1.f, 0.f, 0.f));
     view = glm::rotate(view, app->cameraRot.y * DEGTORAD, glm::vec3(0.f, 1.f, 0.f));
     view = glm::rotate(view, app->cameraRot.z * DEGTORAD, glm::vec3(0.f, 0.f, 1.f));
-   
-    ++app->angle;
 
     glBindBuffer(GL_UNIFORM_BUFFER, app->cbuffer.handle);
 
@@ -951,10 +947,9 @@ void Update(App* app)
         AlignHead(app->cbuffer, app->uniformBlockAlignment);
         app->entities[i].localParamsOffset = app->cbuffer.head;
 
-        glm::mat4 world = glm::rotate(app->entities[i].worldMatrix, glm::radians(app->angle), vec3(0, 1, 0));
-        glm::mat4 MVP = projection * view * world;
+        glm::mat4 MVP = projection * view * app->entities[i].worldMatrix;
 
-        PushMat4(app->cbuffer, world);
+        PushMat4(app->cbuffer, app->entities[i].worldMatrix);
         PushMat4(app->cbuffer, MVP);
 
         app->entities[i].localParamsSize = app->cbuffer.head - app->entities[i].localParamsOffset;
