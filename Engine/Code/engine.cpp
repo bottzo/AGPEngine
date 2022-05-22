@@ -6,6 +6,8 @@
 #include <stb_image.h>
 #include <stb_image_write.h>
 
+#define DEGTORAD 0.0174533f
+
 GLuint CreateProgramFromSource(String programSource, const char* shaderName)
 {
     GLchar  infoLogBuffer[1024] = {};
@@ -251,6 +253,62 @@ u32 CreateSphere(App* app)
     glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, mesh.indexBufferHandle);
     glBufferData(GL_ELEMENT_ARRAY_BUFFER, subMesh.indices.size()*sizeof(u32), subMesh.indices.data(), GL_STATIC_DRAW);
 
+    Material mat = {};
+    mat.albedoTextureIdx = app->magentaTexIdx;
+    app->materials.push_back(mat);
+    model.materialIdx.push_back(app->materials.size() - 1);
+    return modelIdx;
+}
+
+u32 CreatePlane(App* app)
+{
+    const float vertices[] = {
+    -1,-1,0.0,  0,0,1,  0.0,0.0,
+    1,-1,0.0,   0,0,1,  1.0,0.0,
+    1,1,0.0,    0,0,1,  1.0,1.0,
+    -1,1,0.0,   0,0,1,  0.0,1.0
+    };
+
+    const unsigned short indices[] = {
+        0,1,2,0,2,3
+    };
+
+    app->meshes.push_back(Mesh{});
+    Mesh& mesh = app->meshes.back();
+    app->models.push_back(Model{});
+    Model& model = app->models.back();
+    model.meshIdx = (u32)app->meshes.size() - 1u;
+    u32 modelIdx = (u32)app->models.size() - 1u;
+
+    mesh.submeshes.push_back(Submesh{});
+    Submesh& subMesh = mesh.submeshes.back();
+    VertexBufferLayout vertexFormat;
+    vertexFormat.attributes.push_back({ 0,3,0 });
+    vertexFormat.attributes.push_back({ 1,3, 3 * sizeof(float) });
+    vertexFormat.attributes.push_back(VertexBufferAttribute{ 2, 2, 2 * sizeof(float) });
+    vertexFormat.stride = 8 * sizeof(float);
+    subMesh.vertexBufferLayout = vertexFormat;
+    const unsigned int vertexCount = sizeof(vertices) / sizeof(float);
+    subMesh.vertices.reserve(vertexCount);
+    for(int i = 0; i<vertexCount; ++i)
+        subMesh.vertices.push_back(vertices[i]);
+
+    const unsigned int indexCount = sizeof(indices) / sizeof(unsigned short);
+    subMesh.indices.reserve(indexCount);
+    for (int i = 0; i < indexCount; ++i)
+        subMesh.indices.push_back(indices[i]);
+
+    glGenBuffers(1, &mesh.vertexBufferHandle);
+    glBindBuffer(GL_ARRAY_BUFFER, mesh.vertexBufferHandle);
+    glBufferData(GL_ARRAY_BUFFER, subMesh.vertices.size() * sizeof(float), subMesh.vertices.data(), GL_STATIC_DRAW);
+
+    glGenBuffers(1, &mesh.indexBufferHandle);
+    glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, mesh.indexBufferHandle);
+    glBufferData(GL_ELEMENT_ARRAY_BUFFER, subMesh.indices.size() * sizeof(u32), subMesh.indices.data(), GL_STATIC_DRAW);
+
+    Material mat = {};
+    mat.albedoTextureIdx = app->whiteTexIdx;
+    app->materials.push_back(mat);
     model.materialIdx.push_back(app->materials.size() - 1);
     return modelIdx;
 }
@@ -482,7 +540,7 @@ void LoadProgramAttributes(Program& program)
     delete[] attributeName;
 }
 
-void LoadPatrik(App* app)
+u32 LoadPatrik(App* app)
 {
     u32 modelAppIdx = LoadModel(app, "Patrick/Patrick.obj");
     app->patrickProgramIdx = LoadProgram(app, "shaders2.glsl", "TEXTURED_PATRICE");
@@ -494,6 +552,8 @@ void LoadPatrik(App* app)
     LoadProgramAttributes(program);
 
     app->mode = Mode_Patrick;
+
+    return modelAppIdx;
 }
 
 glm::mat4 TransformScale(const glm::vec3& scaleFactors)
@@ -830,7 +890,7 @@ void Init(App* app)
 
     //for the screen quad
     LoadTexturesQuad(app);
-    LoadPatrik(app);
+    app->patrickModelIdx = LoadPatrik(app);
 
     app->cbuffer.head = 0;
     app->cbuffer.data = nullptr;
@@ -854,7 +914,7 @@ void Init(App* app)
         one.rot = vec3(0.f);
         one.scale = vec3(0.45f);
         one.worldMatrix = TransformPositionScale(one.pos, one.scale);
-        one.modelIndex = app->models.size() - 1;
+        one.modelIndex = app->patrickModelIdx;
         one.localParamsOffset = 0;
         one.localParamsSize = 0;
         one.name = "Patrick " + std::to_string(i);
@@ -865,21 +925,28 @@ void Init(App* app)
     }
 
     app->sphereModelIdx = CreateSphere(app);
-    //Entity sphere = {};
-    //sphere.worldMatrix = TransformPositionScale(vec3(0.4f, 0.f, 1.5f), vec3(1.f));
-    //sphere.modelIndex = sphereModelIdx;
-    //sphere.localParamsOffset = 0;
-    //sphere.localParamsSize = 0;
-    //app->entities.push_back(sphere);
+    app->planeModelIdx = CreatePlane(app);
+
+    Entity plane = {};
+    plane.pos = vec3(0.f, 0.f, 0.f);
+    plane.rot = vec3(0.f);
+    plane.scale = vec3(80.f);
+    plane.worldMatrix = TransformPositionScale(plane.pos, plane.scale);
+    plane.worldMatrix = glm::rotate(plane.worldMatrix, -90 * DEGTORAD, glm::vec3(1.f, 0.f, 0.f));
+    plane.modelIndex = app->planeModelIdx;
+    plane.localParamsOffset = 0;
+    plane.localParamsSize = 0;
+    plane.name = "Plane " + std::to_string(app->models.size() - 1);
+    app->entities.push_back(plane);
     
     //loading lights
     //app->lights.push_back({vec3(1,1,1), vec3(1,-1,-1), vec3(0,0,0), LightType_Directional });
     //TODO: Load screen filling quad model to models for the directional
     float radius = 65.f;
-    app->lights.push_back({ vec3(0,.5,1), GetAttenuationValuesFromRange(radius), radius , LightType::LightType_Point, TransformPositionScale(vec3(0.f, 1.f, 0.f), vec3(radius)), app->sphereModelIdx, 0, 0, 0, 0 });
+    app->lights.push_back({ vec3(.5,0,.5), GetAttenuationValuesFromRange(radius), radius , LightType::LightType_Point, TransformPositionScale(vec3(0.f, 1.f, 0.f), vec3(radius)), app->sphereModelIdx, 0, 0, 0, 0 });
     app->lights.push_back({ vec3(0,1,0), GetAttenuationValuesFromRange(radius), radius , LightType::LightType_Point, TransformPositionScale(vec3(1.f, 0.f, 0.f), vec3(radius)), app->sphereModelIdx, 0, 0, 0, 0 });
     app->lights.push_back({ vec3(0,0,1), GetAttenuationValuesFromRange(radius), radius , LightType::LightType_Point, TransformPositionScale(vec3(-1.f, 0.f, 0.f), vec3(radius)), app->sphereModelIdx, 0, 0, 0, 0 });
-    app->lights.push_back({ vec3(1,1,1), vec3(0,1,-1), radius , LightType::LightType_Directional, TransformScale(vec3(1.f)), app->sphereModelIdx, 0, 0, 0, 0 });
+    app->lights.push_back({ vec3(1,1,1), vec3(1,1,1), radius , LightType::LightType_Directional, TransformScale(vec3(1.f)), app->sphereModelIdx, 0, 0, 0, 0 });
 
     glEnable(GL_CULL_FACE);
     glCullFace(GL_BACK);
@@ -900,7 +967,6 @@ void Gui(App* app)
     ImGui::End();
 }
 
-#define DEGTORAD 0.0174533f
 void Update(App* app)
 {
     float aspectRario = (float)app->displaySize.x / (float)app->displaySize.y;
@@ -940,7 +1006,7 @@ void Update(App* app)
         //PushVec3(app->cbuffer, light.position);
         //PushUInt(app->cbuffer, light.type);
         PushFloat(app->cbuffer, light.radius);
-        app->lights[i].lightParamsSize = app->cbuffer.head - app->lights[i].lightParamsOffset;
+        light.lightParamsSize = app->cbuffer.head - light.lightParamsOffset;
     }
 
     // -- Local Params

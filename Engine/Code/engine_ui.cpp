@@ -103,7 +103,7 @@ void LightsSettings(App* app)
                 }
             }
             if (ImGui::Button("Add directional light"))
-                app->lights.push_back({ vec3(1,1,1), vec3(0,1,-1), 0 , LightType::LightType_Directional, TransformScale(vec3(1.f)), app->sphereModelIdx, 0, 0, 0, 0 });
+                app->lights.push_back({ vec3(1,1,1), vec3(1,1,1), 0 , LightType::LightType_Directional, TransformScale(vec3(1.f)), app->sphereModelIdx, 0, 0, 0, 0 });
             
             ImGui::TreePop();
         }
@@ -182,9 +182,46 @@ void EntitiesSetings(App* app)
             if (ImGui::Button(("Remove " + entity.name).c_str()))
                 app->entities.erase(app->entities.begin() + i);
             ImGui::Separator();
-
         }
-
+        if (ImGui::Button("Add Sphere"))
+        {
+            Entity sphere = {};
+            sphere.worldMatrix = TransformPositionScale(vec3(0.f), vec3(1.f));
+            sphere.rot = vec3(0.f);
+            sphere.scale = vec3(1.f);
+            sphere.worldMatrix = TransformPositionScale(sphere.pos, sphere.scale);
+            sphere.modelIndex = app->sphereModelIdx;
+            sphere.localParamsOffset = 0;
+            sphere.localParamsSize = 0;
+            sphere.name = "Sphere " + std::to_string(app->entities.size());
+            app->entities.push_back(sphere);
+        }
+        if (ImGui::Button("Add Patrick"))
+        {
+            Entity patrick = {};
+            patrick.pos = vec3(0.f);
+            patrick.rot = vec3(0.f);
+            patrick.scale = vec3(0.45f);
+            patrick.worldMatrix = TransformPositionScale(patrick.pos, patrick.scale);
+            patrick.modelIndex = app->patrickModelIdx;
+            patrick.localParamsOffset = 0;
+            patrick.localParamsSize = 0;
+            patrick.name = "Patrick " + std::to_string(app->entities.size());
+            app->entities.push_back(patrick);
+        }
+        if (ImGui::Button("Add Plane"))
+        {
+            Entity plane = {};
+            plane.pos = vec3(0.f, 0.f, 0.f);
+            plane.rot = vec3(0.f);
+            plane.scale = vec3(1.f);
+            plane.worldMatrix = TransformPositionScale(plane.pos, plane.scale);
+            plane.modelIndex = app->planeModelIdx;
+            plane.localParamsOffset = 0;
+            plane.localParamsSize = 0;
+            plane.name = "Plane " + std::to_string(app->entities.size());
+            app->entities.push_back(plane);
+        }
         ImGui::TreePop();
     }
     ImGui::Separator();

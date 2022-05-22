@@ -184,6 +184,8 @@ struct App
 
     //Model indices
     u32 sphereModelIdx;
+    u32 planeModelIdx;
+    u32 patrickModelIdx;
 
     // program indices
     u32 texturedGeometryProgramIdx;
@@ -226,7 +228,7 @@ struct App
     GLuint depthAttachmentHandle = 0;
 
     //Camera Settings
-    glm::vec3 cameraPos = glm::vec3(0.f, 0.f, -4.f);
+    glm::vec3 cameraPos = glm::vec3(0.f, -1.f, -4.f);
     glm::vec3 cameraRot = glm::vec3(0.f);
     float zNear = 0.1f;
     float zFar = 100.f;
