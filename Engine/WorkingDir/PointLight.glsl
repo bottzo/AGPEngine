@@ -16,7 +16,11 @@ out vec3 lPosition;
 layout(binding = 1, std140) uniform LocalParams
 {
 	mat4 uWorldMatrix;
-	mat4 uWorldViewProjectionMatrix;
+};
+
+layout(binding = 3, std140) uniform viewProjMat
+{
+	mat4 uViewProjectionMatrix;
 };
 
 struct Light
@@ -41,7 +45,7 @@ void main()
 	//counter position of the sphere
 	//vec3 lFragCounter = lFrag + -lNormal * uLight.radius * 2.;
 
-	gl_Position = uWorldViewProjectionMatrix * vec4(aPosition, 1.0);
+	gl_Position = uViewProjectionMatrix * uWorldMatrix * vec4(aPosition, 1.0);
 }
 
 #elif defined(FRAGMENT) ///////////////////////////////////////////////
@@ -83,8 +87,10 @@ void main()
 	vec3 depth = texture(uTextureDepth,tCoords).rgb;
 	vec3 position = texture(uTexturePos,tCoords).rgb;
 
+	//ambient
+	vec3 ambient = uLight.color * 0.15f;
+
 	//diffuse
-	oColor = vec4(albedo,1.);
 	float constant = uLight.direction.x;
 	float linear = uLight.direction.y;
 	float quadratic = uLight.direction.z;
@@ -106,8 +112,8 @@ void main()
 		specCol = uLight.color * spec;
 	}
 
-	oColor *= vec4(specCol * 0.2f + difCol * 0.8f, 1.);
-	//oColor = vec4(vec3(intensity), 1.0);
+	oColor = vec4((ambient + (difCol+specCol)) * albedo ,1.);
+	//oColor *= vec4(specCol * 0.2f + difCol * 0.8f, 1.);
 }
 #endif
 #endif

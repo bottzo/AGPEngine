@@ -216,7 +216,11 @@ struct App
     int uniformBlockAlignment;
     u32 cameraParamsOffset;
     u32 cameraParamsSize;
+    u32 vpParamsOffset;
+    u32 vpParamsSize;
     Buffer cbuffer;
+
+    glm::mat4 vpMatrix;
 
     // VAO object to link our screen filling quad with our textured quad shader
     GLuint vao;
@@ -226,6 +230,11 @@ struct App
     GLuint framebufferHandle = 0;
     std::vector<GLuint> ColorAttachmentHandles;
     GLuint depthAttachmentHandle = 0;
+
+    unsigned int shadowMapWidth = 2048;
+    unsigned int shadowMapHeight = 2048;
+    GLuint shadowFramebufferHandle = 0;
+    GLuint shadowDepthAttachmentHandle = 0;
 
     //Camera Settings
     glm::vec3 cameraPos = glm::vec3(0.f, -1.f, -4.f);
