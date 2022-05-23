@@ -11,7 +11,6 @@ layout(location=2) in vec2 aTexCoord;
 
 out vec2 lTexCoord;
 out vec3 lNormal;
-out vec3 lPosition;
 
 layout(binding = 1, std140) uniform LocalParams
 {
@@ -23,17 +22,6 @@ layout(binding = 3, std140) uniform viewProjMat
 	mat4 uViewProjectionMatrix;
 };
 
-struct Light
-{
-	vec3 color;
-	vec3 direction;
-	float radius; //TODO: use the radius instead of the direction??? if not get rid of the radius variable
-};
-layout(binding = 0, std140) uniform GlobalParams
-{
-	Light uLight;
-};
-
 void main()
 {
 	lTexCoord = aTexCoord;
@@ -41,9 +29,7 @@ void main()
 	lNormal = normalize(vec3( uWorldMatrix * vec4(aNormal, 0.0)));
 
 	//center of the sphere
-	lPosition.xyz = lFrag + (-lNormal * uLight.radius);
-	//counter position of the sphere
-	//vec3 lFragCounter = lFrag + -lNormal * uLight.radius * 2.;
+	//lPosition.xyz = lFrag + (-lNormal * uLight.radius);
 
 	gl_Position = uViewProjectionMatrix * uWorldMatrix * vec4(aPosition, 1.0);
 }
@@ -52,13 +38,13 @@ void main()
 
 in vec2 lTexCoord;
 in vec3 lNormal;
-in vec3 lPosition;
 
 struct Light
 {
 	vec3 color;
 	vec3 direction;
 	float radius; //TODO: use the radius instead of the direction??? if not get rid of the radius variable
+	vec3 pos;
 };
 layout(binding = 0, std140) uniform GlobalParams
 {
@@ -94,9 +80,10 @@ void main()
 	float constant = uLight.direction.x;
 	float linear = uLight.direction.y;
 	float quadratic = uLight.direction.z;
-	float distance = length(lPosition - position);
+	float distance = length(position - uLight.pos);
 	float attenuation = 1.0 / (constant + linear*distance + quadratic*distance*distance);
-	vec3 lDir = normalize(lPosition - position);//lNormal;
+
+	vec3 lDir = normalize(position - uLight.pos);//lNormal;
 	float intensity = max(dot(normals, lDir),0.0) * attenuation;
 	vec3 difCol = uLight.color * intensity;
 
@@ -109,9 +96,10 @@ void main()
 	vec3 specCol = vec3(0.);
 	if (spec > 0) {
 		spec = pow(spec, matSpecularity);
-		specCol = uLight.color * spec;
+		specCol = uLight.color * spec *.2f;
 	}
 
+	//oColor = vec4((ambient + (difCol)) * albedo ,1.);
 	oColor = vec4((ambient + (difCol+specCol)) * albedo ,1.);
 	//oColor *= vec4(specCol * 0.2f + difCol * 0.8f, 1.);
 }

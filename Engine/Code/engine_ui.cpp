@@ -95,8 +95,8 @@ void LightsSettings(App* app)
                     std::string strLightName = "Light " + strLightIndex;
                     ImGui::Spacing();
                     ImGui::Text(strLightName.c_str());
-                    ImGui::ColorEdit3(("color " + strLightName).c_str(), (float*)&light.color, ImGuiColorEditFlags_NoAlpha);
-                    ImGui::DragFloat3(("dir " + strLightName).c_str(), (float*)&light.direction, 0.05f, 0.0f, 0.0f, "%.3f", NULL);
+                    ImGui::ColorEdit3(("color " + strLightName).c_str(), glm::value_ptr(light.color), ImGuiColorEditFlags_NoAlpha);
+                    ImGui::DragFloat3(("dir " + strLightName).c_str(), glm::value_ptr(light.direction), 0.03f,-1.0f, 1.0f, "%.3f", NULL);
                     if (ImGui::Button(("Remove " + strLightName).c_str()))
                         app->lights.erase(app->lights.begin() + i);
                     ImGui::Separator();
@@ -118,17 +118,11 @@ void LightsSettings(App* app)
                     std::string strLightName = "Light " + strLightIndex;
                     ImGui::Spacing();
                     ImGui::Text(strLightName.c_str());
-                    ImGui::ColorEdit3(("color " + strLightName).c_str(), (float*)&light.color, ImGuiColorEditFlags_NoAlpha);
-                    glm::vec3 pos = light.worldMatrix[3];
-                    if (ImGui::DragFloat3(("pos " + strLightName).c_str(), (float*)&pos, 0.05f, 0.0f, 0.0f, "%.3f", NULL))
-                        light.worldMatrix = TransformPositionScale(pos, glm::vec3(light.radius));
-                    float prevRadius = light.radius;
+                    ImGui::ColorEdit3(("color " + strLightName).c_str(), glm::value_ptr(light.color), ImGuiColorEditFlags_NoAlpha);
+                    if (ImGui::DragFloat3(("pos " + strLightName).c_str(), glm::value_ptr(light.pos), 0.05f, 0.0f, 0.0f, "%.3f", NULL))
+                        light.worldMatrix = TransformPositionScale(light.pos, glm::vec3(light.radius));
                     if (ImGui::DragFloat(("radius " + strLightName).c_str(), &light.radius, .2f, 0.f, 3250.f))
-                    {
-                        light.worldMatrix = glm::scale(light.worldMatrix, glm::vec3(1.f/prevRadius));
-                        light.worldMatrix = glm::scale(light.worldMatrix, glm::vec3(light.radius));
-                        light.direction = GetAttenuationValuesFromRange(light.radius);
-                    }
+                        light.worldMatrix = TransformPositionScale(light.pos, glm::vec3(light.radius));
 
                     if (ImGui::Button(("Remove " + strLightName).c_str()))
                         app->lights.erase(app->lights.begin() + i);
@@ -138,8 +132,8 @@ void LightsSettings(App* app)
             }
             if (ImGui::Button("Add point light"))
             {
-                float radius = 13.f;
-                app->lights.push_back({ vec3(1,1,1), GetAttenuationValuesFromRange(radius), radius , LightType::LightType_Point, TransformPositionScale(vec3(0.f, 0.f, 0.f), vec3(radius)), app->sphereModelIdx, 0, 0, 0, 0 });
+                float radius = 15.f;
+                app->lights.push_back({ vec3(1.,1.,1.), GetAttenuationValuesFromRange(radius), radius , LightType::LightType_Point, TransformPositionScale(vec3(0.f, 1.f, 0.f), vec3(radius)), app->sphereModelIdx, 0, 0, 0, 0, glm::vec3(0,3,0) });
             }
             ImGui::TreePop();
         }
@@ -163,10 +157,10 @@ void EntitiesSetings(App* app)
             if (ImGui::InputText((entity.name + std::to_string(i)).c_str(), buffer, (int)(sizeof(buffer) / sizeof(char)), ImGuiInputTextFlags_EnterReturnsTrue | ImGuiInputTextFlags_AutoSelectAll))
                 entity.name = buffer;
             glm::vec3 prevPos = entity.pos;
-            if (ImGui::DragFloat3(("pos " + entity.name).c_str(), (float*)&entity.pos, 0.05f, 0.0f, 0.0f, "%.3f", NULL))
+            if (ImGui::DragFloat3(("pos " + entity.name).c_str(), glm::value_ptr(entity.pos), 0.05f, 0.0f, 0.0f, "%.3f", NULL))
                 entity.worldMatrix = glm::translate(entity.worldMatrix, entity.pos - prevPos);
             glm::vec3 prevRot = entity.rot;
-            if (ImGui::DragFloat3(("rot " + entity.name).c_str(), (float*)&entity.rot, 0.3f, -360.f, 360.0f, "%.3f", NULL))
+            if (ImGui::DragFloat3(("rot " + entity.name).c_str(), glm::value_ptr(entity.rot), 0.3f, -360.f, 360.0f, "%.3f", NULL))
             {
                 glm::vec3 rotation = (entity.rot - prevRot) * DEGTORAD;
                 entity.worldMatrix = glm::rotate(entity.worldMatrix, rotation.x, glm::vec3(1.f, 0.f, 0.f));
@@ -174,7 +168,7 @@ void EntitiesSetings(App* app)
                 entity.worldMatrix = glm::rotate(entity.worldMatrix, rotation.z, glm::vec3(0.f, 0.f, 1.f));
             }
             glm::vec3 prevScale = entity.scale;
-            if (ImGui::DragFloat3(("scale " + entity.name).c_str(), (float*)&entity.scale, 0.02f, 0.0f, 0.0f, "%.3f", NULL))
+            if (ImGui::DragFloat3(("scale " + entity.name).c_str(), glm::value_ptr(entity.scale), 0.02f, 0.0f, 0.0f, "%.3f", NULL))
             {
                 entity.worldMatrix = glm::scale(entity.worldMatrix, glm::vec3(1.f / prevScale));
                 entity.worldMatrix = glm::scale(entity.worldMatrix, entity.scale);

@@ -133,6 +133,8 @@ struct Light
     u32 localParamsSize;
     u32 lightParamsOffset;
     u32 lightParamsSize;
+    //for pointlights
+    vec3 pos = vec3(0.0f);
 };
 
 struct Buffer
@@ -240,7 +242,7 @@ struct App
     glm::vec3 cameraPos = glm::vec3(0.f, -1.f, -4.f);
     glm::vec3 cameraRot = glm::vec3(0.f);
     float zNear = 0.1f;
-    float zFar = 100.f;
+    float zFar = 500.f;
 };
 
 void Init(App* app);

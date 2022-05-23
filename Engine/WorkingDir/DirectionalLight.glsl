@@ -29,6 +29,7 @@ struct Light
 	vec3 color;
 	vec3 direction;
 	float radius;
+	vec3 pos;
 };
 layout(binding = 0, std140) uniform GlobalParams
 {
@@ -51,6 +52,7 @@ uniform mat4 lightSpaceMatrix;
 
 layout(location = 0)out vec4 oColor;
 
+//https://www.youtube.com/watch?v=9g-4aJhCnyY
 float HardShadow(vec4 fragPosLightSpace, vec3 normals, vec3 lightDir)
 {
 	float shadow = 0.0f;
@@ -130,11 +132,10 @@ void main()
 	vec3 specCol = vec3(0.);
 	if (spec > 0) {
 		spec = pow(spec, matSpecularity);
-		specCol = uLight.color * spec;
+		specCol = uLight.color * spec *.2f;
 	}
 
 	//shadow
-	//https://www.youtube.com/watch?v=9g-4aJhCnyY
 	vec4 fragPosLightSpace = lightSpaceMatrix * vec4(position, 1.0);
 	//float shadow = HardShadow(fragPosLightSpace, normals, lightDir);
 	float shadow = SoftShadow(fragPosLightSpace, normals, lightDir);

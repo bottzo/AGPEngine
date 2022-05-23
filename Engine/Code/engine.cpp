@@ -964,10 +964,8 @@ void Init(App* app)
     //loading lights
     //app->lights.push_back({vec3(1,1,1), vec3(1,-1,-1), vec3(0,0,0), LightType_Directional });
     //TODO: Load screen filling quad model to models for the directional
-    float radius = 65.f;
-    app->lights.push_back({ vec3(.5,0,.5), GetAttenuationValuesFromRange(radius), radius , LightType::LightType_Point, TransformPositionScale(vec3(0.f, 1.f, 0.f), vec3(radius)), app->sphereModelIdx, 0, 0, 0, 0 });
-    app->lights.push_back({ vec3(0,1,0), GetAttenuationValuesFromRange(radius), radius , LightType::LightType_Point, TransformPositionScale(vec3(1.f, 0.f, 0.f), vec3(radius)), app->sphereModelIdx, 0, 0, 0, 0 });
-    app->lights.push_back({ vec3(0,0,1), GetAttenuationValuesFromRange(radius), radius , LightType::LightType_Point, TransformPositionScale(vec3(-1.f, 0.f, 0.f), vec3(radius)), app->sphereModelIdx, 0, 0, 0, 0 });
+    float radius = 20.f;
+    app->lights.push_back({ vec3(1.,1.,1.), GetAttenuationValuesFromRange(radius), radius , LightType::LightType_Point, TransformPositionScale(vec3(0.f, 1.f, 0.f), vec3(radius)), app->sphereModelIdx, 0, 0, 0, 0, glm::vec3(0,3,0)});
     app->lights.push_back({ vec3(1,1,1), vec3(1,1,1), radius , LightType::LightType_Directional, TransformScale(vec3(1.f)), app->sphereModelIdx, 0, 0, 0, 0 });
 
     glEnable(GL_CULL_FACE);
@@ -1034,6 +1032,7 @@ void Update(App* app)
         //PushVec3(app->cbuffer, light.position);
         //PushUInt(app->cbuffer, light.type);
         PushFloat(app->cbuffer, light.radius);
+        PushMat4(app->cbuffer, light.pos);
         light.lightParamsSize = app->cbuffer.head - light.lightParamsOffset;
     }
 
@@ -1216,15 +1215,17 @@ void Render(App* app)
                     glBindBufferRange(GL_UNIFORM_BUFFER, 1, app->cbuffer.handle, app->lights[i].localParamsOffset, app->lights[i].localParamsSize);
 
                     glm::mat4 lightSpaceMatrix;
-                    //render from light point of view for shadows
+                    //render from light point of view to create shadowMap
                     if (app->lights[i].type == LightType::LightType_Directional)
                     {
-                        glm::mat4 lightProjection = glm::ortho(-35.0f, 35.0f, -35.0f, 35.0f, app->zNear, app->zFar);
-                        glm::vec3 zDir = glm::normalize(app->lights[i].direction);
-                        glm::vec3 xDir = glm::cross(zDir, glm::vec3(0, 1, 0));
-                        glm::vec3 up = glm::cross(xDir, zDir);
-                        //glm::mat4 lightView = glm::lookAt(app->zFar * zDir, glm::vec3(0.0f, 0.0f, 0.0f), up);
-                        glm::mat4 lightView = glm::lookAt(app->zFar/5.f * zDir, glm::vec3(0.0f, 0.0f, 0.0f), glm::vec3(0, 1, 0));
+                        //glm::mat4 lightProjection = glm::ortho(-35.0f, 35.0f, -35.0f, 35.0f, app->zNear, app->zFar);
+                        glm::mat4 lightProjection = glm::ortho(-35.0f, 35.0f, -35.0f, 35.0f, 0.1f, 75.f);
+                        //glm::vec3 zDir = glm::normalize(app->lights[i].direction);
+                        //glm::vec3 xDir = glm::cross(zDir, glm::vec3(0, 1, 0));
+                        //glm::vec3 up = glm::cross(xDir, zDir);
+                        ////glm::mat4 lightView = glm::lookAt(app->zFar * zDir, glm::vec3(0.0f, 0.0f, 0.0f), up);
+                        //glm::mat4 lightView = glm::lookAt(app->zFar/5.f * zDir, glm::vec3(0.0f, 0.0f, 0.0f), glm::vec3(0, 1, 0));
+                        glm::mat4 lightView = glm::lookAt(20.f * app->lights[i].direction, glm::vec3(0.0f, 0.0f, 0.0f), glm::vec3(0, 1, 0));
                     
                         lightSpaceMatrix = lightProjection * lightView;
                     
