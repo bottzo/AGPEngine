@@ -122,7 +122,10 @@ void LightsSettings(App* app)
                     if (ImGui::DragFloat3(("pos " + strLightName).c_str(), glm::value_ptr(light.pos), 0.05f, 0.0f, 0.0f, "%.3f", NULL))
                         light.worldMatrix = TransformPositionScale(light.pos, glm::vec3(light.radius));
                     if (ImGui::DragFloat(("radius " + strLightName).c_str(), &light.radius, .2f, 0.f, 3250.f))
+                    {
                         light.worldMatrix = TransformPositionScale(light.pos, glm::vec3(light.radius));
+                        light.direction = GetAttenuationValuesFromRange(light.radius);
+                    }
 
                     if (ImGui::Button(("Remove " + strLightName).c_str()))
                         app->lights.erase(app->lights.begin() + i);
