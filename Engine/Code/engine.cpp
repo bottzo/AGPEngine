@@ -1358,35 +1358,41 @@ void Render(App* app)
                     glUseProgram(currProgram->handle);
                     GLint loc = glGetUniformLocation(currProgram->handle, "uTextureAlb");
                     glUniform1i(loc, 0);
+                    glActiveTexture(GL_TEXTURE0);
+                    glBindTexture(GL_TEXTURE_2D, app->ColorAttachmentHandles[1]);
                     loc = glGetUniformLocation(currProgram->handle, "uTextureNorm");
                     glUniform1i(loc, 1);
-                    loc = glGetUniformLocation(currProgram->handle, "uTextureDepth");
-                    glUniform1i(loc, 2);
+                    glActiveTexture(GL_TEXTURE1);
+                    glBindTexture(GL_TEXTURE_2D, app->ColorAttachmentHandles[2]);
+                    //loc = glGetUniformLocation(currProgram->handle, "uTextureDepth");
+                    //glUniform1i(loc, 2);
                     loc = glGetUniformLocation(currProgram->handle, "uTexturePos");
-                    glUniform1i(loc, 3);
+                    glUniform1i(loc, 2);
+                    glActiveTexture(GL_TEXTURE2);
+                    glBindTexture(GL_TEXTURE_2D, app->ColorAttachmentHandles[4]);
 
-                    unsigned int idx = 1;
-                    for (; idx < app->ColorAttachmentHandles.size(); ++idx)
-                    {
-                        glActiveTexture(GL_TEXTURE0 + (idx - 1));
-                        glBindTexture(GL_TEXTURE_2D, app->ColorAttachmentHandles[idx]);
-                    }
+                    //unsigned int idx = 1;
+                    //for (; idx < app->ColorAttachmentHandles.size(); ++idx)
+                    //{
+                    //    glActiveTexture(GL_TEXTURE0 + (idx - 1));
+                    //    glBindTexture(GL_TEXTURE_2D, app->ColorAttachmentHandles[idx]);
+                    //}
 
                     if (app->lights[i].type == LightType::LightType_Directional) {
                         loc = glGetUniformLocation(currProgram->handle, "shadowMap");
-                        glUniform1i(loc, 4);
+                        glUniform1i(loc, 3);
                         loc = glGetUniformLocation(currProgram->handle, "lightSpaceMatrix");
                         glUniformMatrix4fv(loc, 1, GL_FALSE, glm::value_ptr(lightSpaceMatrix));
-                        glActiveTexture(GL_TEXTURE4);
+                        glActiveTexture(GL_TEXTURE3);
                         glBindTexture(GL_TEXTURE_2D, app->shadowDepthAttachmentHandle);
                     }
-                    else if (app->lights[i].type == LightType::LightType_Point)
-                    {
-                        loc = glGetUniformLocation(currProgram->handle, "shadowCubeMap");
-                        glUniform1i(loc, 4);
-                        glActiveTexture(GL_TEXTURE4);
-                        glBindTexture(GL_TEXTURE_CUBE_MAP, app->shadowCubemapIdx);
-                    }
+                    //else if (app->lights[i].type == LightType::LightType_Point)
+                    //{
+                    //    loc = glGetUniformLocation(currProgram->handle, "shadowCubeMap");
+                    //    glUniform1i(loc, 3);
+                    //    glActiveTexture(GL_TEXTURE3);
+                    //    glBindTexture(GL_TEXTURE_CUBE_MAP, app->shadowCubemapIdx);
+                    //}
 
                     if (app->lights[i].type == LightType::LightType_Directional) 
                     {

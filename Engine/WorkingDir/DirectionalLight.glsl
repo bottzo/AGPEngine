@@ -43,7 +43,7 @@ layout(binding = 2, std140) uniform CameraParams
 
 uniform sampler2D uTextureAlb;
 uniform sampler2D uTextureNorm;
-uniform sampler2D uTextureDepth;
+//uniform sampler2D uTextureDepth;
 uniform sampler2D uTexturePos;
 uniform sampler2D shadowMap;
 
@@ -110,7 +110,7 @@ void main()
 
 	vec3 albedo = texture(uTextureAlb,tCoords).rgb;
 	vec3 normals = texture(uTextureNorm,tCoords).rgb;
-	vec3 depth = texture(uTextureDepth,tCoords).rgb;
+	//vec3 depth = texture(uTextureDepth,tCoords).rgb;
 	vec3 position = texture(uTexturePos,tCoords).rgb;
 
 	vec3 lightDir = normalize(uLight.direction);
