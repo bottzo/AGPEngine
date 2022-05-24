@@ -8,7 +8,7 @@
 
 #define DEGTORAD 0.0174533f
 
-GLuint CreateProgramFromSource(String programSource, const char* shaderName)
+GLuint CreateProgramFromSource(String programSource, const char* shaderName, bool geometry = false)
 {
     GLchar  infoLogBuffer[1024] = {};
     GLsizei infoLogBufferSize = sizeof(infoLogBuffer);
@@ -20,6 +20,7 @@ GLuint CreateProgramFromSource(String programSource, const char* shaderName)
     sprintf(shaderNameDefine, "#define %s\n", shaderName);
     char vertexShaderDefine[] = "#define VERTEX\n";
     char fragmentShaderDefine[] = "#define FRAGMENT\n";
+    char geometryShaderDefine[] = "#define GEOMETRY\n";
 
     const GLchar* vertexShaderSource[] = {
         versionString,
@@ -45,6 +46,18 @@ GLuint CreateProgramFromSource(String programSource, const char* shaderName)
         (GLint) strlen(fragmentShaderDefine),
         (GLint) programSource.len
     };
+    const GLchar* geometryShaderSource[] = {
+        versionString,
+        shaderNameDefine,
+        geometryShaderDefine,
+        programSource.str
+    };
+    const GLint geometryShaderLengths[] = {
+        (GLint)strlen(versionString),
+        (GLint)strlen(shaderNameDefine),
+        (GLint)strlen(geometryShaderDefine),
+        (GLint)programSource.len
+    };
 
     GLuint vshader = glCreateShader(GL_VERTEX_SHADER);
     glShaderSource(vshader, ARRAY_COUNT(vertexShaderSource), vertexShaderSource, vertexShaderLengths);
@@ -54,6 +67,19 @@ GLuint CreateProgramFromSource(String programSource, const char* shaderName)
     {
         glGetShaderInfoLog(vshader, infoLogBufferSize, &infoLogSize, infoLogBuffer);
         ELOG("glCompileShader() failed with vertex shader %s\nReported message:\n%s\n", shaderName, infoLogBuffer);
+    }
+
+    GLuint geoshader;
+    if (geometry) {
+        geoshader = glCreateShader(GL_GEOMETRY_SHADER);
+        glShaderSource(geoshader, ARRAY_COUNT(geometryShaderSource), geometryShaderSource, geometryShaderLengths);
+        glCompileShader(geoshader);
+        glGetShaderiv(geoshader, GL_COMPILE_STATUS, &success);
+        if (!success)
+        {
+            glGetShaderInfoLog(geoshader, infoLogBufferSize, &infoLogSize, infoLogBuffer);
+            ELOG("glCompileShader() failed with geometry shader %s\nReported message:\n%s\n", shaderName, infoLogBuffer);
+        }
     }
 
     GLuint fshader = glCreateShader(GL_FRAGMENT_SHADER);
@@ -68,6 +94,8 @@ GLuint CreateProgramFromSource(String programSource, const char* shaderName)
 
     GLuint programHandle = glCreateProgram();
     glAttachShader(programHandle, vshader);
+    if (geometry)
+        glAttachShader(programHandle, geoshader);
     glAttachShader(programHandle, fshader);
     glLinkProgram(programHandle);
     glGetProgramiv(programHandle, GL_LINK_STATUS, &success);
@@ -81,18 +109,22 @@ GLuint CreateProgramFromSource(String programSource, const char* shaderName)
 
     glDetachShader(programHandle, vshader);
     glDetachShader(programHandle, fshader);
+    if(geometry)
+        glDetachShader(programHandle, geoshader);
     glDeleteShader(vshader);
     glDeleteShader(fshader);
+    if(geometry)
+        glDeleteShader(geoshader);
 
     return programHandle;
 }
 
-u32 LoadProgram(App* app, const char* filepath, const char* programName)
+u32 LoadProgram(App* app, const char* filepath, const char* programName, bool geometryShader = false)
 {
     String programSource = ReadTextFile(filepath);
 
     Program program = {};
-    program.handle = CreateProgramFromSource(programSource, programName);
+    program.handle = CreateProgramFromSource(programSource, programName, geometryShader);
     program.filepath = filepath;
     program.programName = programName;
     program.lastWriteTimestamp = GetFileLastWriteTimestamp(filepath);
@@ -666,6 +698,22 @@ GLuint GenerateFrameBuffer(App*app)
     glDrawBuffer(GL_NONE);
     glReadBuffer(GL_NONE);
 
+    glGenFramebuffers(1, &app->shadowPointFramebufferHandle);
+    glGenTextures(1, &app->shadowPointDepthAttachmentHandle);
+    glBindTexture(GL_TEXTURE_CUBE_MAP, app->shadowPointDepthAttachmentHandle);
+    for (unsigned int i = 0; i < 6; ++i)
+        glTexImage2D(GL_TEXTURE_CUBE_MAP_POSITIVE_X + i, 0, GL_DEPTH_COMPONENT, app->shadowMapWidth, app->shadowMapHeight, 0, GL_DEPTH_COMPONENT, GL_FLOAT, NULL);
+    glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
+    glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+    glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_WRAP_R, GL_CLAMP_TO_EDGE);
+    glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
+    glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
+    
+    glBindFramebuffer(GL_FRAMEBUFFER, app->shadowPointFramebufferHandle);
+    glFramebufferTexture(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, app->shadowPointDepthAttachmentHandle, 0);
+    glDrawBuffer(GL_NONE);
+    glReadBuffer(GL_NONE);
+
     glBindFramebuffer(GL_FRAMEBUFFER, 0);
 
     return frameBufferHandle;
@@ -909,6 +957,8 @@ void Init(App* app)
     LoadProgramAttributes(app->programs[app->pointLightIdx]);
     app->noFragmentIdx = LoadProgram(app, "NoFragment.glsl", "NO_FRAGMENT");
     LoadProgramAttributes(app->programs[app->noFragmentIdx]);
+    app->shadowCubemapIdx = LoadProgram(app, "ShadowCubemap.glsl", "SHADOW_CUBEMAP", true);
+    LoadProgramAttributes(app->programs[app->shadowCubemapIdx]);
 
     //for the screen quad
     LoadTexturesQuad(app);
@@ -1031,8 +1081,8 @@ void Update(App* app)
         PushVec3(app->cbuffer, light.direction);
         //PushVec3(app->cbuffer, light.position);
         //PushUInt(app->cbuffer, light.type);
-        PushFloat(app->cbuffer, light.radius);
-        PushMat4(app->cbuffer, light.pos);
+        //PushFloat(app->cbuffer, light.radius);
+        PushVec3(app->cbuffer, light.pos);
         light.lightParamsSize = app->cbuffer.head - light.lightParamsOffset;
     }
 
@@ -1214,44 +1264,84 @@ void Render(App* app)
                     glBindBufferRange(GL_UNIFORM_BUFFER, 0, app->cbuffer.handle, app->lights[i].lightParamsOffset, app->lights[i].lightParamsSize);
                     glBindBufferRange(GL_UNIFORM_BUFFER, 1, app->cbuffer.handle, app->lights[i].localParamsOffset, app->lights[i].localParamsSize);
 
-                    glm::mat4 lightSpaceMatrix;
                     //render from light point of view to create shadowMap
+                    glm::mat4 lightSpaceMatrix;
+                    glm::mat4 lightProjection;
                     if (app->lights[i].type == LightType::LightType_Directional)
                     {
-                        //glm::mat4 lightProjection = glm::ortho(-35.0f, 35.0f, -35.0f, 35.0f, app->zNear, app->zFar);
-                        glm::mat4 lightProjection = glm::ortho(-35.0f, 35.0f, -35.0f, 35.0f, 0.1f, 75.f);
-                        //glm::vec3 zDir = glm::normalize(app->lights[i].direction);
-                        //glm::vec3 xDir = glm::cross(zDir, glm::vec3(0, 1, 0));
-                        //glm::vec3 up = glm::cross(xDir, zDir);
-                        ////glm::mat4 lightView = glm::lookAt(app->zFar * zDir, glm::vec3(0.0f, 0.0f, 0.0f), up);
-                        //glm::mat4 lightView = glm::lookAt(app->zFar/5.f * zDir, glm::vec3(0.0f, 0.0f, 0.0f), glm::vec3(0, 1, 0));
-                        glm::mat4 lightView = glm::lookAt(20.f * app->lights[i].direction, glm::vec3(0.0f, 0.0f, 0.0f), glm::vec3(0, 1, 0));
-                    
-                        lightSpaceMatrix = lightProjection * lightView;
-                    
-                        glBindFramebuffer(GL_FRAMEBUFFER, app->shadowFramebufferHandle);
+                        if (app->lights[i].type == LightType::LightType_Directional)
+                        {
+                            //glm::mat4 lightProjection = glm::ortho(-35.0f, 35.0f, -35.0f, 35.0f, app->zNear, app->zFar);
+                            lightProjection = glm::ortho(-35.0f, 35.0f, -35.0f, 35.0f, 0.1f, 75.f);
+                            //glm::vec3 zDir = glm::normalize(app->lights[i].direction);
+                            //glm::vec3 xDir = glm::cross(zDir, glm::vec3(0, 1, 0));
+                            //glm::vec3 up = glm::cross(xDir, zDir);
+                            ////glm::mat4 lightView = glm::lookAt(app->zFar * zDir, glm::vec3(0.0f, 0.0f, 0.0f), up);
+                            //glm::mat4 lightView = glm::lookAt(app->zFar/5.f * zDir, glm::vec3(0.0f, 0.0f, 0.0f), glm::vec3(0, 1, 0));
+                            glm::mat4 lightView = glm::lookAt(20.f * app->lights[i].direction, glm::vec3(0.0f, 0.0f, 0.0f), glm::vec3(0, 1, 0));
+                            lightSpaceMatrix = lightProjection * lightView;
+
+                            glBindFramebuffer(GL_FRAMEBUFFER, app->shadowFramebufferHandle);
+                            glUseProgram(app->programs[app->noFragmentIdx].handle);
+                        }
+                        //else if (app->lights[i].type == LightType::LightType_Point)
+                        //{
+                        //    lightProjection = glm::perspective(glm::radians(90.f), 1.0f, 0.1f, app->zFar);
+                        //    glm::mat4 lightSpaceMatrices[] = {
+                        //        lightProjection * glm::lookAt(app->lights[i].pos, app->lights[i].pos + glm::vec3(1.0,1.0,0.0), glm::vec3(0.0,-1.0, 0.0)),
+                        //        lightProjection * glm::lookAt(app->lights[i].pos, app->lights[i].pos + glm::vec3(-1.0,1.0,0.0), glm::vec3(0.0,-1.0, 0.0)),
+                        //        lightProjection * glm::lookAt(app->lights[i].pos, app->lights[i].pos + glm::vec3(0.0,1.0,0.0), glm::vec3(0.0,0.0, 1.0)),
+                        //        lightProjection * glm::lookAt(app->lights[i].pos, app->lights[i].pos + glm::vec3(0.0,-1.0,0.0), glm::vec3(0.0,0.0, -1.0)),
+                        //        lightProjection * glm::lookAt(app->lights[i].pos, app->lights[i].pos + glm::vec3(0.0,0.0,1.0), glm::vec3(0.0,-1.0, 0.0)),
+                        //        lightProjection * glm::lookAt(app->lights[i].pos, app->lights[i].pos + glm::vec3(0.0,0.0,-1.0), glm::vec3(0.0,-1.0, 0.0))
+                        //    };
+                        //
+                        //    glBindFramebuffer(GL_FRAMEBUFFER, app->shadowPointFramebufferHandle);
+                        //    Program& shadowProgram = app->programs[app->shadowCubemapIdx];
+                        //    glUseProgram(shadowProgram.handle);
+                        //    GLint LOC = glGetUniformLocation(shadowProgram.handle, "shadowMatrices[0]");
+                        //    LOC = glGetUniformLocation(shadowProgram.handle, "shadowMatrices[2]");
+                        //    LOC = glGetUniformLocation(shadowProgram.handle, "shadowMatrices[5]");
+                        //    LOC = glGetUniformLocation(shadowProgram.handle, "lightPos");
+                        //    LOC = glGetUniformLocation(shadowProgram.handle, "farPlane");
+                        //    glUniformMatrix4fv(glGetUniformLocation(shadowProgram.handle, "shadowMatrices[0]"), 1, GL_FALSE, glm::value_ptr(lightSpaceMatrices[0]));
+                        //    glUniformMatrix4fv(glGetUniformLocation(shadowProgram.handle, "shadowMatrices[1]"), 1, GL_FALSE, glm::value_ptr(lightSpaceMatrices[1]));
+                        //    glUniformMatrix4fv(glGetUniformLocation(shadowProgram.handle, "shadowMatrices[2]"), 1, GL_FALSE, glm::value_ptr(lightSpaceMatrices[2]));
+                        //    glUniformMatrix4fv(glGetUniformLocation(shadowProgram.handle, "shadowMatrices[3]"), 1, GL_FALSE, glm::value_ptr(lightSpaceMatrices[3]));
+                        //    glUniformMatrix4fv(glGetUniformLocation(shadowProgram.handle, "shadowMatrices[4]"), 1, GL_FALSE, glm::value_ptr(lightSpaceMatrices[4]));
+                        //    glUniformMatrix4fv(glGetUniformLocation(shadowProgram.handle, "shadowMatrices[5]"), 1, GL_FALSE, glm::value_ptr(lightSpaceMatrices[5]));
+                        //    glUniform3f(glGetUniformLocation(shadowProgram.handle, "lightPos"), app->lights[i].pos.x, app->lights[i].pos.y, app->lights[i].pos.z);
+                        //    glUniform1f(glGetUniformLocation(shadowProgram.handle, "farPlane"), app->zFar);
+                        //
+                        //}
+
                         glViewport(0, 0, app->shadowMapWidth, app->shadowMapHeight);
                         glEnable(GL_DEPTH_TEST);
                         glDepthMask(0xff);
                         //glDisable(GL_CULL_FACE);
                         glClear(GL_DEPTH_BUFFER_BIT);
-                        glUseProgram(app->programs[app->noFragmentIdx].handle);
                         //glUniformMatrix4fv(app->vpShadowUniformLoc, 1, GL_FALSE, glm::value_ptr(lightSpaceMatrix));
                         //glUniformMatrix4fv(app->mShadowUniformLoc, 1, GL_FALSE, glm::value_ptr(app->lights[i].worldMatrix));
-                    
-                        glBindBuffer(GL_UNIFORM_BUFFER, app->cbuffer.handle);
-                        glBufferSubData(GL_UNIFORM_BUFFER, app->vpParamsOffset, app->vpParamsSize, glm::value_ptr(lightSpaceMatrix));
-                        glBindBuffer(GL_UNIFORM_BUFFER, 0);
+                        if (app->lights[i].type == LightType::LightType_Directional)
+                        {
+                            glBindBuffer(GL_UNIFORM_BUFFER, app->cbuffer.handle);
+                            glBufferSubData(GL_UNIFORM_BUFFER, app->vpParamsOffset, app->vpParamsSize, glm::value_ptr(lightSpaceMatrix));
+                            glBindBuffer(GL_UNIFORM_BUFFER, 0);
+                        }
                         RenderScene(app);
-                        glBindBuffer(GL_UNIFORM_BUFFER, app->cbuffer.handle);
-                        glBufferSubData(GL_UNIFORM_BUFFER, app->vpParamsOffset, app->vpParamsSize, glm::value_ptr(app->vpMatrix));
-                        glBindBuffer(GL_UNIFORM_BUFFER, 0);
-                    
+                        if (app->lights[i].type == LightType::LightType_Directional)
+                        {
+                            glBindBuffer(GL_UNIFORM_BUFFER, app->cbuffer.handle);
+                            glBufferSubData(GL_UNIFORM_BUFFER, app->vpParamsOffset, app->vpParamsSize, glm::value_ptr(app->vpMatrix));
+                            glBindBuffer(GL_UNIFORM_BUFFER, 0);
+                        }
+
                         glBindFramebuffer(GL_FRAMEBUFFER, app->framebufferHandle);
                         glDisable(GL_DEPTH_TEST);
                         glDepthMask(0x00);
                         glViewport(0, 0, app->displaySize.x, app->displaySize.y);
                     }
+                    //End render shadowmaps ---------------------------------------------------------------------------------------------------------   
 
                     glUseProgram(currProgram->handle);
                     GLint loc = glGetUniformLocation(currProgram->handle, "uTextureAlb");
@@ -1263,19 +1353,28 @@ void Render(App* app)
                     loc = glGetUniformLocation(currProgram->handle, "uTexturePos");
                     glUniform1i(loc, 3);
 
-                    loc = glGetUniformLocation(currProgram->handle, "shadowMap");
-                    glUniform1i(loc, 4);
-                    loc = glGetUniformLocation(currProgram->handle, "lightSpaceMatrix");
-                    glUniformMatrix4fv(loc, 1, GL_FALSE, glm::value_ptr(lightSpaceMatrix));
-                    glActiveTexture(GL_TEXTURE4);
-                    glBindTexture(GL_TEXTURE_2D, app->shadowDepthAttachmentHandle);
-
                     unsigned int idx = 1;
                     for (; idx < app->ColorAttachmentHandles.size(); ++idx)
                     {
                         glActiveTexture(GL_TEXTURE0 + (idx - 1));
                         glBindTexture(GL_TEXTURE_2D, app->ColorAttachmentHandles[idx]);
                     }
+
+                    if (app->lights[i].type == LightType::LightType_Directional) {
+                        loc = glGetUniformLocation(currProgram->handle, "shadowMap");
+                        glUniform1i(loc, 4);
+                        loc = glGetUniformLocation(currProgram->handle, "lightSpaceMatrix");
+                        glUniformMatrix4fv(loc, 1, GL_FALSE, glm::value_ptr(lightSpaceMatrix));
+                        glActiveTexture(GL_TEXTURE4);
+                        glBindTexture(GL_TEXTURE_2D, app->shadowDepthAttachmentHandle);
+                    }
+                    //else if (app->lights[i].type == LightType::LightType_Point)
+                    //{
+                    //    loc = glGetUniformLocation(currProgram->handle, "shadowCubeMap");
+                    //    glUniform1i(loc, 4);
+                    //    glActiveTexture(GL_TEXTURE4);
+                    //    glBindTexture(GL_TEXTURE_CUBE_MAP, app->shadowCubemapIdx);
+                    //}
 
                     if (app->lights[i].type == LightType::LightType_Directional) 
                     {

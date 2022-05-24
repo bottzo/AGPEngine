@@ -28,7 +28,6 @@ struct Light
 {
 	vec3 color;
 	vec3 direction;
-	float radius;
 	vec3 pos;
 };
 layout(binding = 0, std140) uniform GlobalParams
@@ -140,8 +139,8 @@ void main()
 	//float shadow = HardShadow(fragPosLightSpace, normals, lightDir);
 	float shadow = SoftShadow(fragPosLightSpace, normals, lightDir);
 	
-	//oColor = vec4((ambient + (difCol+specCol)) * albedo ,1.);
 	oColor = vec4((ambient + (1.-shadow) * (difCol+specCol)) * albedo ,1.);
+	//oColor = vec4((ambient + (difCol+specCol)) * albedo ,1.);
 	//oColor *= vec4(specCol * 0.2f + difCol * 0.8f, 1.); 
 
 	//oColor = vec4(specCol, 1.0);

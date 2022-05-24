@@ -130,5 +130,8 @@
     <None Include="WorkingDir\NoFragment.glsl">
       <Filter>Shaders</Filter>
     </None>
+    <None Include="WorkingDir\ShadowCubemap.glsl">
+      <Filter>Shaders</Filter>
+    </None>
   </ItemGroup>
 </Project>

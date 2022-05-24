@@ -196,6 +196,7 @@ struct App
     u32 directionalLightIdx;
     u32 pointLightIdx;
     u32 noFragmentIdx;
+    u32 shadowCubemapIdx;
     
     // texture indices
     u32 diceTexIdx;
@@ -237,6 +238,8 @@ struct App
     unsigned int shadowMapHeight = 2048;
     GLuint shadowFramebufferHandle = 0;
     GLuint shadowDepthAttachmentHandle = 0;
+    GLuint shadowPointFramebufferHandle = 0;
+    GLuint shadowPointDepthAttachmentHandle = 0;
 
     //Camera Settings
     glm::vec3 cameraPos = glm::vec3(0.f, -1.f, -4.f);

@@ -43,7 +43,6 @@ struct Light
 {
 	vec3 color;
 	vec3 direction;
-	float radius; //TODO: use the radius instead of the direction??? if not get rid of the radius variable
 	vec3 pos;
 };
 layout(binding = 0, std140) uniform GlobalParams
@@ -61,6 +60,7 @@ uniform sampler2D uTextureAlb;
 uniform sampler2D uTextureNorm;
 uniform sampler2D uTextureDepth;
 uniform sampler2D uTexturePos;
+//uniform samplerCube shadowCubeMap;
 
 layout(location = 0)out vec4 oColor;
 
@@ -84,24 +84,47 @@ void main()
 	float attenuation = 1.0 / (constant + linear*distance + quadratic*distance*distance);
 
 	vec3 lDir = normalize(position - uLight.pos);//lNormal;
-	float intensity = max(dot(normals, lDir),0.0) * attenuation;
+	float intensity = max(dot(normals, lDir),0.0) * abs(attenuation);
 	vec3 difCol = uLight.color * intensity;
 
 	//specular
 	float matSpecularity = 160.;
-	vec3 cameraFragDir = normalize(cameraPos - position);
+	vec3 cameraFragDir = normalize(position - cameraPos);
 	vec3 reflectDir = normalize(reflect(lDir, normals));
 	float spec = dot(cameraFragDir, reflectDir);
 	//spec = clamp(spec,0.,1.);
 	vec3 specCol = vec3(0.);
 	if (spec > 0) {
 		spec = pow(spec, matSpecularity);
-		specCol = uLight.color * spec *.2f;
+		specCol = uLight.color * spec * .15f;
 	}
 
-	//oColor = vec4((ambient + (difCol)) * albedo ,1.);
+	////shadows
+	////https://www.youtube.com/watch?v=Q8w_z2Ye-Go&t=1s
+	//float shadow = 0.0f;
+	//vec3 fragToLight = position - uLight.pos;
+	//float currentDepth = length(fragToLight);
+	//float bias = max(0.5f * (1.0f - dot(normals, lDir)), 0.0005f);
+	//
+	//int sampleRadius = 2;
+	//float pixelSize = 1.0f / 1024.f;
+	//for(int z = -sampleRadius; z <= sampleRadius; ++z)
+	//{
+	//	for(int y = -sampleRadius; y <= sampleRadius; ++y)
+	//	{
+	//		for(int x = -sampleRadius; x <= sampleRadius; ++x)
+	//		{
+	//			float closestDepth = texture(shadowCubeMap, fragToLight + vec3(x,y,z) * pixelSize).r;
+	//			closestDepth *= zFar;
+	//			if(currentDepth > closestDepth + bias)
+	//				shadow += 1.f;
+	//		}
+	//	}
+	//}
+	//shadow /= pow((sampleRadius * 2 + 1), 3);
+
 	oColor = vec4((ambient + (difCol+specCol)) * albedo ,1.);
-	//oColor *= vec4(specCol * 0.2f + difCol * 0.8f, 1.);
+	//oColor = vec4((ambient + (1.-shadow) * (difCol+specCol)) * albedo ,1.);
 }
 #endif
 #endif
