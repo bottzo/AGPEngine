@@ -1149,12 +1149,10 @@ GLuint FindVAO(Mesh& mesh, u32 submeshIndex, const Program& program) {
     return vaoHandle;
 }
 
-void RenderScene(App* app)
+void RenderEntities(App* app)
 {
     Program& textureMeshProgram = app->programs[app->geometryPassIdx];
     glUseProgram(textureMeshProgram.handle);
-    //binding global uniform buffer params
-    //glBindBufferRange(GL_UNIFORM_BUFFER, 0, app->cbuffer.handle, app->globalParamsOffset, app->globalParamsSize)
     for (Entity entity : app->entities)
     {
         //binding local uniform buffer params
@@ -1167,10 +1165,7 @@ void RenderScene(App* app)
             u32 submeshMaterialIdx = model.materialIdx[i];
             Material& submeshMaterial = app->materials[submeshMaterialIdx];
             glActiveTexture(GL_TEXTURE0);
-            //glEnable(GL_TEXTURE_2D);
             glBindTexture(GL_TEXTURE_2D, app->textures[submeshMaterial.albedoTextureIdx].handle);
-            //glUniform1i(app->programUniformTexture, 0);
-            //glUniformMatrix4fv(glGetUniformLocation(textureMeshProgram.handle, "MVP"), 1, GL_FALSE, glm::value_ptr(app->MVP));
 
             Submesh& submesh = mesh.submeshes[i];
             glDrawElements(GL_TRIANGLES, submesh.indices.size(), GL_UNSIGNED_INT, (void*)(u64)submesh.indexOffset);
@@ -1238,7 +1233,7 @@ void Render(App* app)
                 glBindBufferRange(GL_UNIFORM_BUFFER, 2, app->cbuffer.handle, app->cameraParamsOffset, app->cameraParamsSize);
                 glBindBufferRange(GL_UNIFORM_BUFFER, 3, app->cbuffer.handle, app->vpParamsOffset, app->vpParamsSize);
                 //Geometry pass
-                RenderScene(app);
+                RenderEntities(app);
 
                 //Lighting pass
                 glBindVertexArray(0);
@@ -1267,6 +1262,7 @@ void Render(App* app)
                     //render from light point of view to create shadowMap
                     glm::mat4 lightSpaceMatrix;
                     glm::mat4 lightProjection;
+                    Program* shadowProgram = &app->programs[app->noFragmentIdx];
                     if (app->lights[i].type == LightType::LightType_Directional)
                     {
                         if (app->lights[i].type == LightType::LightType_Directional)
@@ -1282,53 +1278,69 @@ void Render(App* app)
                             lightSpaceMatrix = lightProjection * lightView;
 
                             glBindFramebuffer(GL_FRAMEBUFFER, app->shadowFramebufferHandle);
-                            glUseProgram(app->programs[app->noFragmentIdx].handle);
+                            shadowProgram = &app->programs[app->noFragmentIdx];
+                            glUseProgram(shadowProgram->handle);
                         }
-                        //else if (app->lights[i].type == LightType::LightType_Point)
-                        //{
-                        //    lightProjection = glm::perspective(glm::radians(90.f), 1.0f, 0.1f, app->zFar);
-                        //    glm::mat4 lightSpaceMatrices[] = {
-                        //        lightProjection * glm::lookAt(app->lights[i].pos, app->lights[i].pos + glm::vec3(1.0,1.0,0.0), glm::vec3(0.0,-1.0, 0.0)),
-                        //        lightProjection * glm::lookAt(app->lights[i].pos, app->lights[i].pos + glm::vec3(-1.0,1.0,0.0), glm::vec3(0.0,-1.0, 0.0)),
-                        //        lightProjection * glm::lookAt(app->lights[i].pos, app->lights[i].pos + glm::vec3(0.0,1.0,0.0), glm::vec3(0.0,0.0, 1.0)),
-                        //        lightProjection * glm::lookAt(app->lights[i].pos, app->lights[i].pos + glm::vec3(0.0,-1.0,0.0), glm::vec3(0.0,0.0, -1.0)),
-                        //        lightProjection * glm::lookAt(app->lights[i].pos, app->lights[i].pos + glm::vec3(0.0,0.0,1.0), glm::vec3(0.0,-1.0, 0.0)),
-                        //        lightProjection * glm::lookAt(app->lights[i].pos, app->lights[i].pos + glm::vec3(0.0,0.0,-1.0), glm::vec3(0.0,-1.0, 0.0))
-                        //    };
-                        //
-                        //    glBindFramebuffer(GL_FRAMEBUFFER, app->shadowPointFramebufferHandle);
-                        //    Program& shadowProgram = app->programs[app->shadowCubemapIdx];
-                        //    glUseProgram(shadowProgram.handle);
-                        //    GLint LOC = glGetUniformLocation(shadowProgram.handle, "shadowMatrices[0]");
-                        //    LOC = glGetUniformLocation(shadowProgram.handle, "shadowMatrices[2]");
-                        //    LOC = glGetUniformLocation(shadowProgram.handle, "shadowMatrices[5]");
-                        //    LOC = glGetUniformLocation(shadowProgram.handle, "lightPos");
-                        //    LOC = glGetUniformLocation(shadowProgram.handle, "farPlane");
-                        //    glUniformMatrix4fv(glGetUniformLocation(shadowProgram.handle, "shadowMatrices[0]"), 1, GL_FALSE, glm::value_ptr(lightSpaceMatrices[0]));
-                        //    glUniformMatrix4fv(glGetUniformLocation(shadowProgram.handle, "shadowMatrices[1]"), 1, GL_FALSE, glm::value_ptr(lightSpaceMatrices[1]));
-                        //    glUniformMatrix4fv(glGetUniformLocation(shadowProgram.handle, "shadowMatrices[2]"), 1, GL_FALSE, glm::value_ptr(lightSpaceMatrices[2]));
-                        //    glUniformMatrix4fv(glGetUniformLocation(shadowProgram.handle, "shadowMatrices[3]"), 1, GL_FALSE, glm::value_ptr(lightSpaceMatrices[3]));
-                        //    glUniformMatrix4fv(glGetUniformLocation(shadowProgram.handle, "shadowMatrices[4]"), 1, GL_FALSE, glm::value_ptr(lightSpaceMatrices[4]));
-                        //    glUniformMatrix4fv(glGetUniformLocation(shadowProgram.handle, "shadowMatrices[5]"), 1, GL_FALSE, glm::value_ptr(lightSpaceMatrices[5]));
-                        //    glUniform3f(glGetUniformLocation(shadowProgram.handle, "lightPos"), app->lights[i].pos.x, app->lights[i].pos.y, app->lights[i].pos.z);
-                        //    glUniform1f(glGetUniformLocation(shadowProgram.handle, "farPlane"), app->zFar);
-                        //
-                        //}
+                        else if (app->lights[i].type == LightType::LightType_Point)
+                        {
+                            lightProjection = glm::perspective(glm::radians(90.f), 1.0f, 0.1f, app->zFar);
+                            glm::mat4 lightSpaceMatrices[] = {
+                                lightProjection * glm::lookAt(app->lights[i].pos, app->lights[i].pos + glm::vec3(1.0,1.0,0.0), glm::vec3(0.0,-1.0, 0.0)),
+                                lightProjection * glm::lookAt(app->lights[i].pos, app->lights[i].pos + glm::vec3(-1.0,1.0,0.0), glm::vec3(0.0,-1.0, 0.0)),
+                                lightProjection * glm::lookAt(app->lights[i].pos, app->lights[i].pos + glm::vec3(0.0,1.0,0.0), glm::vec3(0.0,0.0, 1.0)),
+                                lightProjection * glm::lookAt(app->lights[i].pos, app->lights[i].pos + glm::vec3(0.0,-1.0,0.0), glm::vec3(0.0,0.0, -1.0)),
+                                lightProjection * glm::lookAt(app->lights[i].pos, app->lights[i].pos + glm::vec3(0.0,0.0,1.0), glm::vec3(0.0,-1.0, 0.0)),
+                                lightProjection * glm::lookAt(app->lights[i].pos, app->lights[i].pos + glm::vec3(0.0,0.0,-1.0), glm::vec3(0.0,-1.0, 0.0))
+                            };
+                        
+                            glBindFramebuffer(GL_FRAMEBUFFER, app->shadowPointFramebufferHandle);
+                            shadowProgram = &app->programs[app->shadowCubemapIdx];
+                            glUseProgram(shadowProgram->handle);
+                            GLint LOC = glGetUniformLocation(shadowProgram->handle, "shadowMatrices[0]");
+                            LOC = glGetUniformLocation(shadowProgram->handle, "shadowMatrices[2]");
+                            LOC = glGetUniformLocation(shadowProgram->handle, "shadowMatrices[5]");
+                            LOC = glGetUniformLocation(shadowProgram->handle, "lightPos");
+                            LOC = glGetUniformLocation(shadowProgram->handle, "farPlane");
+                            glUniformMatrix4fv(glGetUniformLocation(shadowProgram->handle, "shadowMatrices[0]"), 1, GL_FALSE, glm::value_ptr(lightSpaceMatrices[0]));
+                            glUniformMatrix4fv(glGetUniformLocation(shadowProgram->handle, "shadowMatrices[1]"), 1, GL_FALSE, glm::value_ptr(lightSpaceMatrices[1]));
+                            glUniformMatrix4fv(glGetUniformLocation(shadowProgram->handle, "shadowMatrices[2]"), 1, GL_FALSE, glm::value_ptr(lightSpaceMatrices[2]));
+                            glUniformMatrix4fv(glGetUniformLocation(shadowProgram->handle, "shadowMatrices[3]"), 1, GL_FALSE, glm::value_ptr(lightSpaceMatrices[3]));
+                            glUniformMatrix4fv(glGetUniformLocation(shadowProgram->handle, "shadowMatrices[4]"), 1, GL_FALSE, glm::value_ptr(lightSpaceMatrices[4]));
+                            glUniformMatrix4fv(glGetUniformLocation(shadowProgram->handle, "shadowMatrices[5]"), 1, GL_FALSE, glm::value_ptr(lightSpaceMatrices[5]));
+                            glUniform3f(glGetUniformLocation(shadowProgram->handle, "lightPos"), app->lights[i].pos.x, app->lights[i].pos.y, app->lights[i].pos.z);
+                            glUniform1f(glGetUniformLocation(shadowProgram->handle, "farPlane"), app->zFar);
+                        
+                        }
 
                         glViewport(0, 0, app->shadowMapWidth, app->shadowMapHeight);
                         glEnable(GL_DEPTH_TEST);
                         glDepthMask(0xff);
                         //glDisable(GL_CULL_FACE);
                         glClear(GL_DEPTH_BUFFER_BIT);
-                        //glUniformMatrix4fv(app->vpShadowUniformLoc, 1, GL_FALSE, glm::value_ptr(lightSpaceMatrix));
-                        //glUniformMatrix4fv(app->mShadowUniformLoc, 1, GL_FALSE, glm::value_ptr(app->lights[i].worldMatrix));
                         if (app->lights[i].type == LightType::LightType_Directional)
                         {
                             glBindBuffer(GL_UNIFORM_BUFFER, app->cbuffer.handle);
                             glBufferSubData(GL_UNIFORM_BUFFER, app->vpParamsOffset, app->vpParamsSize, glm::value_ptr(lightSpaceMatrix));
                             glBindBuffer(GL_UNIFORM_BUFFER, 0);
                         }
-                        RenderScene(app);
+                        for (Entity entity : app->entities)
+                        {
+                            //binding local uniform buffer params
+                            glBindBufferRange(GL_UNIFORM_BUFFER, 1, app->cbuffer.handle, entity.localParamsOffset, entity.localParamsSize);
+                            Model& model = app->models[entity.modelIndex];
+                            Mesh& mesh = app->meshes[model.meshIdx];
+                            for (u32 i = 0; i < mesh.submeshes.size(); ++i) {
+                                GLuint vao = FindVAO(mesh, i, *shadowProgram);
+                                glBindVertexArray(vao);
+                                //u32 submeshMaterialIdx = model.materialIdx[i];
+                                //Material& submeshMaterial = app->materials[submeshMaterialIdx];
+                                //glActiveTexture(GL_TEXTURE0);
+                                //glBindTexture(GL_TEXTURE_2D, app->textures[submeshMaterial.albedoTextureIdx].handle);
+
+                                Submesh& submesh = mesh.submeshes[i];
+                                glDrawElements(GL_TRIANGLES, submesh.indices.size(), GL_UNSIGNED_INT, (void*)(u64)submesh.indexOffset);
+                            }
+                        }
                         if (app->lights[i].type == LightType::LightType_Directional)
                         {
                             glBindBuffer(GL_UNIFORM_BUFFER, app->cbuffer.handle);
@@ -1368,13 +1380,13 @@ void Render(App* app)
                         glActiveTexture(GL_TEXTURE4);
                         glBindTexture(GL_TEXTURE_2D, app->shadowDepthAttachmentHandle);
                     }
-                    //else if (app->lights[i].type == LightType::LightType_Point)
-                    //{
-                    //    loc = glGetUniformLocation(currProgram->handle, "shadowCubeMap");
-                    //    glUniform1i(loc, 4);
-                    //    glActiveTexture(GL_TEXTURE4);
-                    //    glBindTexture(GL_TEXTURE_CUBE_MAP, app->shadowCubemapIdx);
-                    //}
+                    else if (app->lights[i].type == LightType::LightType_Point)
+                    {
+                        loc = glGetUniformLocation(currProgram->handle, "shadowCubeMap");
+                        glUniform1i(loc, 4);
+                        glActiveTexture(GL_TEXTURE4);
+                        glBindTexture(GL_TEXTURE_CUBE_MAP, app->shadowCubemapIdx);
+                    }
 
                     if (app->lights[i].type == LightType::LightType_Directional) 
                     {
