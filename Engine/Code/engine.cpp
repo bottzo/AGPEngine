@@ -1041,11 +1041,19 @@ void Update(App* app)
 {
     float aspectRario = (float)app->displaySize.x / (float)app->displaySize.y;
     glm::mat4 projection = glm::perspective(glm::radians(60.f), aspectRario, app->zNear, app->zFar);
+    // UNRELATED RAMI
+    //app->cameraPosition = app->camDist * glm::vec3(cos(app->alpha), app->camHeight, sin(app->alpha));
+    //app->cameraDirection = glm::vec3(0) - app->cameraPosition;
+    
     //glm::mat4 view = glm::lookAt(app->cameraPos, glm::vec3(0.0f), glm::vec3(0.f, 1.f, 0.f));
-    glm::mat4 view = glm::translate(app->cameraPos);
-    view = glm::rotate(view, app->cameraRot.x * DEGTORAD, glm::vec3(1.f, 0.f, 0.f));
-    view = glm::rotate(view, app->cameraRot.y * DEGTORAD, glm::vec3(0.f, 1.f, 0.f));
-    view = glm::rotate(view, app->cameraRot.z * DEGTORAD, glm::vec3(0.f, 0.f, 1.f));
+    //glm::mat4 view = glm::translate(app->cameraPos);
+    //view = glm::rotate(view, app->cameraRot.x * DEGTORAD, glm::vec3(1.f, 0.f, 0.f));
+    //view = glm::rotate(view, app->cameraRot.y * DEGTORAD, glm::vec3(0.f, 1.f, 0.f));
+    //view = glm::rotate(view, app->cameraRot.z * DEGTORAD, glm::vec3(0.f, 0.f, 1.f));
+    glm::mat4 rot = glm::rotate(app->cameraRot.y * DEGTORAD, glm::vec3(0, 1, 0));
+    rot = glm::rotate(rot, app->cameraRot.z * DEGTORAD, glm::vec3(0, 0, 1));
+    rot = glm::rotate(rot, app->cameraRot.x * DEGTORAD, glm::vec3(1, 0, 0));
+    glm::mat4 view = glm::lookAt(app->cameraPos, app->cameraPos + glm::vec3(glm::normalize(rot * glm::vec4(0,0,1,0))), glm::vec3(0, 1, 0));
 
     glBindBuffer(GL_UNIFORM_BUFFER, app->cbuffer.handle);
 
