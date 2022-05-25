@@ -242,8 +242,8 @@ struct App
     GLuint shadowPointDepthAttachmentHandle = 0;
 
     //Camera Settings
-    glm::vec3 cameraPos = glm::vec3(0.f, 1.f, -20.f);
-    glm::vec3 cameraRot = glm::vec3(0.f);
+    glm::vec3 cameraPos = glm::vec3(5.f, 15.f, 15.f);
+    glm::vec3 cameraRot = glm::vec3(30.f,180.f,0.f);
     float zNear = 0.1f;
     float zFar = 500.f;
 };

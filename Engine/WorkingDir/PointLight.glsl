@@ -60,7 +60,7 @@ uniform sampler2D uTextureAlb;
 uniform sampler2D uTextureNorm;
 //uniform sampler2D uTextureDepth;
 uniform sampler2D uTexturePos;
-//uniform samplerCube shadowCubeMap;
+uniform samplerCube shadowCubeMap;
 
 layout(location = 0)out vec4 oColor;
 
@@ -83,7 +83,7 @@ void main()
 	float distance = length(position - uLight.pos);
 	float attenuation = 1.0 / (constant + linear*distance + quadratic*distance*distance);
 
-	vec3 lDir = normalize(position - uLight.pos);//lNormal;
+	vec3 lDir = normalize(uLight.pos - position);//lNormal;
 	float intensity = max(dot(normals, lDir),0.0) * abs(attenuation);
 	vec3 difCol = uLight.color * intensity;
 
@@ -99,32 +99,31 @@ void main()
 		specCol = uLight.color * spec * .15f;
 	}
 
-	////shadows
-	////https://www.youtube.com/watch?v=Q8w_z2Ye-Go&t=1s
-	//float shadow = 0.0f;
-	//vec3 fragToLight = position - uLight.pos;
-	//float currentDepth = length(fragToLight);
-	//float bias = max(0.5f * (1.0f - dot(normals, lDir)), 0.0005f);
-	//
-	//int sampleRadius = 2;
-	//float pixelSize = 1.0f / 1024.f;
-	//for(int z = -sampleRadius; z <= sampleRadius; ++z)
-	//{
-	//	for(int y = -sampleRadius; y <= sampleRadius; ++y)
-	//	{
-	//		for(int x = -sampleRadius; x <= sampleRadius; ++x)
-	//		{
-	//			float closestDepth = texture(shadowCubeMap, fragToLight + vec3(x,y,z) * pixelSize).r;
-	//			closestDepth *= zFar;
-	//			if(currentDepth > closestDepth + bias)
-	//				shadow += 1.f;
-	//		}
-	//	}
-	//}
-	//shadow /= pow((sampleRadius * 2 + 1), 3);
+	//shadows
+	//https://www.youtube.com/watch?v=Q8w_z2Ye-Go&t=1s
+	float shadow = 0.0f;
+	vec3 fragToLight = position - uLight.pos;
+	float currentDepth = length(fragToLight);
+	float bias = max(0.5f * (1.0f - dot(normals, lDir)), 0.0005f);
+	
+	int sampleRadius = 2;
+	float pixelSize = 1.0f / 1024.f;
+	for(int z = -sampleRadius; z <= sampleRadius; ++z)
+	{
+		for(int y = -sampleRadius; y <= sampleRadius; ++y)
+		{
+			for(int x = -sampleRadius; x <= sampleRadius; ++x)
+			{
+				float closestDepth = texture(shadowCubeMap, fragToLight + vec3(x,y,z) * pixelSize).r;
+				closestDepth *= zFar;
+				if(currentDepth > closestDepth + bias)
+					shadow += 1.f;
+			}
+		}
+	}
+	shadow /= pow((sampleRadius * 2 + 1), 3);
 
-	oColor = vec4((ambient + (difCol+specCol)) * albedo ,1.);
-	//oColor = vec4((ambient + (1.-shadow) * (difCol+specCol)) * albedo ,1.);
+	oColor = vec4((ambient + (1.-shadow) * (difCol+specCol)) * albedo ,1.);
 }
 #endif
 #endif

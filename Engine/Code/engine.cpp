@@ -1257,6 +1257,9 @@ void Render(App* app)
 
                 for (int i = 0; i < app->lights.size(); ++i)
                 {
+                    glBindBufferRange(GL_UNIFORM_BUFFER, 0, app->cbuffer.handle, app->lights[i].lightParamsOffset, app->lights[i].lightParamsSize);
+                    glBindBufferRange(GL_UNIFORM_BUFFER, 1, app->cbuffer.handle, app->lights[i].localParamsOffset, app->lights[i].localParamsSize);
+
                     Program* currProgram = &app->programs[app->directionalLightIdx];
                     switch (app->lights[i].type)
                     {
@@ -1264,15 +1267,13 @@ void Render(App* app)
                     case LightType::LightType_Point:currProgram = &app->programs[app->pointLightIdx]; break;
                     default: ELOG("Light type unknown: BAD SHADER PROGRAM FOR LIGHT")break;
                     }
-                    glBindBufferRange(GL_UNIFORM_BUFFER, 0, app->cbuffer.handle, app->lights[i].lightParamsOffset, app->lights[i].lightParamsSize);
-                    glBindBufferRange(GL_UNIFORM_BUFFER, 1, app->cbuffer.handle, app->lights[i].localParamsOffset, app->lights[i].localParamsSize);
 
                     //render from light point of view to create shadowMap
                     glm::mat4 lightSpaceMatrix;
                     glm::mat4 lightProjection;
                     Program* shadowProgram = &app->programs[app->noFragmentIdx];
-                    if (app->lights[i].type == LightType::LightType_Directional)
-                    {
+                    //if (app->lights[i].type == LightType::LightType_Directional)
+                    //{
                         if (app->lights[i].type == LightType::LightType_Directional)
                         {
                             //glm::mat4 lightProjection = glm::ortho(-35.0f, 35.0f, -35.0f, 35.0f, app->zNear, app->zFar);
@@ -1293,8 +1294,8 @@ void Render(App* app)
                         {
                             lightProjection = glm::perspective(glm::radians(90.f), 1.0f, 0.1f, app->zFar);
                             glm::mat4 lightSpaceMatrices[] = {
-                                lightProjection * glm::lookAt(app->lights[i].pos, app->lights[i].pos + glm::vec3(1.0,1.0,0.0), glm::vec3(0.0,-1.0, 0.0)),
-                                lightProjection * glm::lookAt(app->lights[i].pos, app->lights[i].pos + glm::vec3(-1.0,1.0,0.0), glm::vec3(0.0,-1.0, 0.0)),
+                                lightProjection * glm::lookAt(app->lights[i].pos, app->lights[i].pos + glm::vec3(1.0,0.0,0.0), glm::vec3(0.0,-1.0, 0.0)),
+                                lightProjection * glm::lookAt(app->lights[i].pos, app->lights[i].pos + glm::vec3(-1.0,0.0,0.0), glm::vec3(0.0,-1.0, 0.0)),
                                 lightProjection * glm::lookAt(app->lights[i].pos, app->lights[i].pos + glm::vec3(0.0,1.0,0.0), glm::vec3(0.0,0.0, 1.0)),
                                 lightProjection * glm::lookAt(app->lights[i].pos, app->lights[i].pos + glm::vec3(0.0,-1.0,0.0), glm::vec3(0.0,0.0, -1.0)),
                                 lightProjection * glm::lookAt(app->lights[i].pos, app->lights[i].pos + glm::vec3(0.0,0.0,1.0), glm::vec3(0.0,-1.0, 0.0)),
@@ -1304,11 +1305,6 @@ void Render(App* app)
                             glBindFramebuffer(GL_FRAMEBUFFER, app->shadowPointFramebufferHandle);
                             shadowProgram = &app->programs[app->shadowCubemapIdx];
                             glUseProgram(shadowProgram->handle);
-                            GLint LOC = glGetUniformLocation(shadowProgram->handle, "shadowMatrices[0]");
-                            LOC = glGetUniformLocation(shadowProgram->handle, "shadowMatrices[2]");
-                            LOC = glGetUniformLocation(shadowProgram->handle, "shadowMatrices[5]");
-                            LOC = glGetUniformLocation(shadowProgram->handle, "lightPos");
-                            LOC = glGetUniformLocation(shadowProgram->handle, "farPlane");
                             glUniformMatrix4fv(glGetUniformLocation(shadowProgram->handle, "shadowMatrices[0]"), 1, GL_FALSE, glm::value_ptr(lightSpaceMatrices[0]));
                             glUniformMatrix4fv(glGetUniformLocation(shadowProgram->handle, "shadowMatrices[1]"), 1, GL_FALSE, glm::value_ptr(lightSpaceMatrices[1]));
                             glUniformMatrix4fv(glGetUniformLocation(shadowProgram->handle, "shadowMatrices[2]"), 1, GL_FALSE, glm::value_ptr(lightSpaceMatrices[2]));
@@ -1360,7 +1356,7 @@ void Render(App* app)
                         glDisable(GL_DEPTH_TEST);
                         glDepthMask(0x00);
                         glViewport(0, 0, app->displaySize.x, app->displaySize.y);
-                    }
+                    //}
                     //End render shadowmaps ---------------------------------------------------------------------------------------------------------   
 
                     glUseProgram(currProgram->handle);
@@ -1394,13 +1390,13 @@ void Render(App* app)
                         glActiveTexture(GL_TEXTURE3);
                         glBindTexture(GL_TEXTURE_2D, app->shadowDepthAttachmentHandle);
                     }
-                    //else if (app->lights[i].type == LightType::LightType_Point)
-                    //{
-                    //    loc = glGetUniformLocation(currProgram->handle, "shadowCubeMap");
-                    //    glUniform1i(loc, 3);
-                    //    glActiveTexture(GL_TEXTURE3);
-                    //    glBindTexture(GL_TEXTURE_CUBE_MAP, app->shadowCubemapIdx);
-                    //}
+                    else if (app->lights[i].type == LightType::LightType_Point)
+                    {
+                        loc = glGetUniformLocation(currProgram->handle, "shadowCubeMap");
+                        glUniform1i(loc, 3);
+                        glActiveTexture(GL_TEXTURE3);
+                        glBindTexture(GL_TEXTURE_CUBE_MAP, app->shadowPointDepthAttachmentHandle);
+                    }
 
                     if (app->lights[i].type == LightType::LightType_Directional) 
                     {
@@ -1409,6 +1405,8 @@ void Render(App* app)
                     }
                     else
                     {
+                        glBindBufferRange(GL_UNIFORM_BUFFER, 1, app->cbuffer.handle, app->lights[i].localParamsOffset, app->lights[i].localParamsSize);
+
                         glDisable(GL_CULL_FACE);
                         glEnable(GL_DEPTH_TEST); //glDepthMask(GL_FALSE);
                         glEnable(GL_STENCIL_TEST);
