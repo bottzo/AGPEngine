@@ -995,6 +995,16 @@ void Init(App* app)
         x += 3;
         z -= 3;
     }
+    Entity extraPatrick = {};
+    extraPatrick.pos = vec3(7.65f, 4.7f, 0.0);
+    extraPatrick.rot = vec3(0.f);
+    extraPatrick.scale = vec3(0.45f);
+    extraPatrick.worldMatrix = TransformPositionScale(extraPatrick.pos, extraPatrick.scale);
+    extraPatrick.modelIndex = app->patrickModelIdx;
+    extraPatrick.localParamsOffset = 0;
+    extraPatrick.localParamsSize = 0;
+    extraPatrick.name = "Patrick " + std::to_string(3);
+    app->entities.push_back(extraPatrick);
 
     app->sphereModelIdx = CreateSphere(app);
     app->planeModelIdx = CreatePlane(app);
@@ -1014,9 +1024,11 @@ void Init(App* app)
     //loading lights
     //app->lights.push_back({vec3(1,1,1), vec3(1,-1,-1), vec3(0,0,0), LightType_Directional });
     //TODO: Load screen filling quad model to models for the directional
-    float radius = 20.f;
-    app->lights.push_back({ vec3(1.,1.,1.), GetAttenuationValuesFromRange(radius), radius , LightType::LightType_Point, TransformPositionScale(vec3(0.f, 1.f, 0.f), vec3(radius)), app->sphereModelIdx, 0, 0, 0, 0, glm::vec3(0,3,0)});
-    app->lights.push_back({ vec3(1,1,1), vec3(1,1,1), radius , LightType::LightType_Directional, TransformScale(vec3(1.f)), app->sphereModelIdx, 0, 0, 0, 0 });
+    float radius = 103.f;
+    app->lights.push_back({ vec3(0.1569f,0.651f,0.8039f), GetAttenuationValuesFromRange(radius), radius , LightType::LightType_Point, TransformPositionScale(vec3(0.3f, 3.f, 0.f), vec3(radius)), app->sphereModelIdx, 0, 0, 0, 0, vec3(0.3f, 3.f, 0.f) });
+    radius = 35.f;
+    app->lights.push_back({ vec3(1.f,1.f,1.f), GetAttenuationValuesFromRange(radius), radius , LightType::LightType_Point, TransformPositionScale(vec3(0.75f, 3.f, -4.3f), vec3(radius)), app->sphereModelIdx, 0, 0, 0, 0, vec3(0.75f, 3.f, -4.3f) });
+    //app->lights.push_back({ vec3(1,1,1), vec3(1,1,1), radius , LightType::LightType_Directional, TransformScale(vec3(1.f)), app->sphereModelIdx, 0, 0, 0, 0 });
 
     glEnable(GL_CULL_FACE);
     glCullFace(GL_BACK);

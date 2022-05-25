@@ -131,7 +131,7 @@ void main()
 	vec3 specCol = vec3(0.);
 	if (spec > 0) {
 		spec = pow(spec, matSpecularity);
-		specCol = uLight.color * spec *.2f;
+		specCol = uLight.color * spec;
 	}
 
 	//shadow
