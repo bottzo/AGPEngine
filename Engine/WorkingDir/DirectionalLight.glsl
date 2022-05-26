@@ -123,16 +123,20 @@ void main()
 	vec3 difCol = uLight.color * intensity;
 
 	//specular
-	float matSpecularity = 160.;
+	float matSpecularity = 64.;
 	vec3 viewDir = normalize(cameraPos - position);
-	vec3 reflectDir = normalize(reflect(lightDir, normals));
-	float spec = dot(viewDir, reflectDir);
-	//spec = clamp(spec,0.,1.);
-	vec3 specCol = vec3(0.);
-	if (spec > 0) {
-		spec = pow(spec, matSpecularity);
-		specCol = uLight.color * spec;
-	}
+	//phong specular
+	//vec3 reflectDir = normalize(reflect(lightDir, normals));
+	//float spec = dot(viewDir, reflectDir);
+	//vec3 specCol = vec3(0.);
+	//if (spec > 0) {
+	//	spec = pow(spec, matSpecularity);
+	//	specCol = uLight.color * spec;
+	//}
+	//blinn-Phong specular: https://learnopengl.com/Advanced-Lighting/Advanced-Lighting
+	vec3 halfwayDir = normalize(viewDir + lightDir);
+	float spec = pow(max(dot(normals,halfwayDir),0.0), matSpecularity);
+	vec3 specCol = uLight.color * spec;
 
 	//shadow
 	vec4 fragPosLightSpace = lightSpaceMatrix * vec4(position, 1.0);
