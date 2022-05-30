@@ -209,7 +209,7 @@ void EntitiesSetings(App* app)
         if (ImGui::Button("Add Rock"))
         {
             Entity rock = {};
-            rock.pos = vec3(0.f,2.f,0.f);
+            rock.pos = vec3(0.f);
             rock.rot = vec3(0.f);
             rock.scale = vec3(0.45f);
             rock.worldMatrix = TransformPositionScale(rock.pos, rock.scale);
