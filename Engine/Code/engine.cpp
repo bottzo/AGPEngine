@@ -119,6 +119,187 @@ GLuint CreateProgramFromSource(String programSource, const char* shaderName, boo
     return programHandle;
 }
 
+void LoadProgramAttributes(Program& program)
+{
+    int maxVariableNameLength;
+    glGetProgramiv(program.handle, GL_ACTIVE_ATTRIBUTE_MAX_LENGTH, &maxVariableNameLength);
+    char* attributeName = new char[maxVariableNameLength];
+    int attributeNameLength;
+    int attributeSize;
+    int attributteByteSize;
+    int usableAttributeSize;
+    GLenum usableAttributeType;
+    GLenum attributeType;
+    int attributeCount;
+    int offset = 0;
+    int attributeLocation;
+    glGetProgramiv(program.handle, GL_ACTIVE_ATTRIBUTES, &attributeCount);
+    for (int i = 0; i < attributeCount; ++i) {
+        glGetActiveAttrib(program.handle, i, /*ARRAY_COUNT(attributeName)*/maxVariableNameLength,
+            &attributeNameLength,
+            &attributeSize,
+            &attributeType,
+            attributeName);
+
+        attributeLocation = glGetAttribLocation(program.handle, attributeName);
+
+        //careful with the stride!!!!
+        switch (attributeType)
+        {
+        case GL_FLOAT:
+            attributteByteSize = sizeof(float) * attributeSize;
+            usableAttributeType = GL_FLOAT;
+            usableAttributeSize = 1;
+            break;
+        case GL_FLOAT_VEC2:
+            attributteByteSize = sizeof(float) * 2 * attributeSize;
+            usableAttributeType = GL_FLOAT;
+            usableAttributeSize = 2;
+            break;
+        case GL_FLOAT_VEC3:
+            attributteByteSize = sizeof(float) * 3 * attributeSize;
+            usableAttributeType = GL_FLOAT;
+            usableAttributeSize = 3;
+            break;
+        case GL_FLOAT_MAT2:
+        case GL_FLOAT_VEC4:
+            attributteByteSize = sizeof(float) * 4 * attributeSize;
+            usableAttributeType = GL_FLOAT;
+            usableAttributeSize = 4;
+            break;
+        case GL_FLOAT_MAT3:
+            attributteByteSize = sizeof(float) * 9 * attributeSize;
+            usableAttributeType = GL_FLOAT;
+            usableAttributeSize = 9;
+            break;
+        case GL_FLOAT_MAT4:
+            attributteByteSize = sizeof(float) * 16 * attributeSize;
+            usableAttributeType = GL_FLOAT;
+            usableAttributeSize = 16;
+            break;
+        case GL_FLOAT_MAT2x3:
+        case GL_FLOAT_MAT3x2:
+            attributteByteSize = sizeof(float) * 6 * attributeSize;
+            usableAttributeType = GL_FLOAT;
+            usableAttributeSize = 6;
+            break;
+        case GL_FLOAT_MAT2x4:
+        case GL_FLOAT_MAT4x2:
+            attributteByteSize = sizeof(float) * 8 * attributeSize;
+            usableAttributeType = GL_FLOAT;
+            usableAttributeSize = 8;
+            break;
+        case GL_FLOAT_MAT3x4:
+        case GL_FLOAT_MAT4x3:
+            attributteByteSize = sizeof(float) * 12 * attributeSize;
+            usableAttributeType = GL_FLOAT;
+            usableAttributeSize = 12;
+            break;
+        case GL_INT:
+            attributteByteSize = sizeof(int) * attributeSize;
+            usableAttributeType = GL_INT;
+            usableAttributeSize = 1;
+            break;
+        case GL_INT_VEC2:
+            attributteByteSize = sizeof(int) * 2 * attributeSize;
+            usableAttributeType = GL_INT;
+            usableAttributeSize = 2;
+            break;
+        case GL_INT_VEC3:
+            attributteByteSize = sizeof(int) * 3 * attributeSize;
+            usableAttributeType = GL_INT;
+            usableAttributeSize = 3;
+            break;
+        case GL_INT_VEC4:
+            attributteByteSize = sizeof(int) * 4 * attributeSize;
+            usableAttributeType = GL_INT;
+            usableAttributeSize = 4;
+            break;
+        case GL_UNSIGNED_INT:
+            attributteByteSize = sizeof(unsigned int) * attributeSize;
+            usableAttributeType = GL_UNSIGNED_INT;
+            usableAttributeSize = 1;
+            break;
+        case GL_UNSIGNED_INT_VEC2:
+            attributteByteSize = sizeof(unsigned int) * 2 * attributeSize;
+            usableAttributeType = GL_UNSIGNED_INT;
+            usableAttributeSize = 2;
+            break;
+        case GL_UNSIGNED_INT_VEC3:
+            attributteByteSize = sizeof(unsigned int) * 3 * attributeSize;
+            usableAttributeType = GL_UNSIGNED_INT;
+            usableAttributeSize = 2;
+            break;
+        case GL_UNSIGNED_INT_VEC4:
+            attributteByteSize = sizeof(unsigned int) * 4 * attributeSize;
+            usableAttributeType = GL_UNSIGNED_INT;
+            usableAttributeSize = 4;
+            break;
+        case GL_DOUBLE:
+            attributteByteSize = sizeof(double) * attributeSize;
+            usableAttributeType = GL_DOUBLE;
+            usableAttributeSize = 1;
+            break;
+        case GL_DOUBLE_VEC2:
+            attributteByteSize = sizeof(double) * 2 * attributeSize;
+            usableAttributeType = GL_DOUBLE;
+            usableAttributeSize = 2;
+            break;
+        case GL_DOUBLE_VEC3:
+            attributteByteSize = sizeof(double) * 3 * attributeSize;
+            usableAttributeType = GL_DOUBLE;
+            usableAttributeSize = 3;
+            break;
+        case GL_DOUBLE_MAT2:
+        case GL_DOUBLE_VEC4:
+            attributteByteSize = sizeof(double) * 4 * attributeSize;
+            usableAttributeType = GL_DOUBLE;
+            usableAttributeSize = 4;
+            break;
+        case GL_DOUBLE_MAT3:
+            attributteByteSize = sizeof(double) * 9 * attributeSize;
+            usableAttributeType = GL_DOUBLE;
+            usableAttributeSize = 9;
+            break;
+        case GL_DOUBLE_MAT4:
+            attributteByteSize = sizeof(double) * 16 * attributeSize;
+            usableAttributeType = GL_DOUBLE;
+            usableAttributeSize = 16;
+            break;
+        case GL_DOUBLE_MAT2x3:
+        case GL_DOUBLE_MAT3x2:
+            attributteByteSize = sizeof(double) * 6 * attributeSize;
+            usableAttributeType = GL_DOUBLE;
+            usableAttributeSize = 6;
+            break;
+        case GL_DOUBLE_MAT2x4:
+        case GL_DOUBLE_MAT4x2:
+            attributteByteSize = sizeof(double) * 8 * attributeSize;
+            usableAttributeType = GL_DOUBLE;
+            usableAttributeSize = 8;
+            break;
+        case GL_DOUBLE_MAT3x4:
+        case GL_DOUBLE_MAT4x3:
+            attributteByteSize = sizeof(double) * 12 * attributeSize;
+            usableAttributeType = GL_DOUBLE;
+            usableAttributeSize = 12;
+            break;
+        default:
+            //TODO: what if we fail???
+            ELOG("Error: Unknown type of program attribute");
+        }
+        //TODO: stride
+        //glVertexAttribPointer(attributeLocation, usableAttributeSize, usableAttributeType, GL_FALSE, sizeof(float) * 5, ((void*)offset));
+        offset += attributteByteSize;
+        //glEnableVertexAttribArray(i);
+
+        //location + component count
+        program.vertexInputLayout.attributes.push_back({ (u8)attributeLocation,(u8)usableAttributeSize });
+    }
+    delete[] attributeName;
+}
+
+
 u32 LoadProgram(App* app, const char* filepath, const char* programName, bool geometryShader = false)
 {
     String programSource = ReadTextFile(filepath);
@@ -128,6 +309,9 @@ u32 LoadProgram(App* app, const char* filepath, const char* programName, bool ge
     program.filepath = filepath;
     program.programName = programName;
     program.lastWriteTimestamp = GetFileLastWriteTimestamp(filepath);
+
+    LoadProgramAttributes(program);
+
     app->programs.push_back(program);
 
     return app->programs.size() - 1;
@@ -390,202 +574,6 @@ void LoadTexturesQuad(App* app)
     app->magentaTexIdx = LoadTexture2D(app, "color_magenta.png");
 
     //app->mode = Mode_TexturedQuad;
-}
-
-void LoadProgramAttributes(Program& program)
-{
-    int maxVariableNameLength;
-    glGetProgramiv(program.handle, GL_ACTIVE_ATTRIBUTE_MAX_LENGTH, &maxVariableNameLength);
-    char* attributeName = new char[maxVariableNameLength];
-    int attributeNameLength;
-    int attributeSize;
-    int attributteByteSize;
-    int usableAttributeSize;
-    GLenum usableAttributeType;
-    GLenum attributeType;
-    int attributeCount;
-    int offset = 0;
-    int attributeLocation;
-    glGetProgramiv(program.handle, GL_ACTIVE_ATTRIBUTES, &attributeCount);
-    for (int i = 0; i < attributeCount; ++i) {
-        glGetActiveAttrib(program.handle, i, /*ARRAY_COUNT(attributeName)*/maxVariableNameLength,
-            &attributeNameLength,
-            &attributeSize,
-            &attributeType,
-            attributeName);
-
-        attributeLocation = glGetAttribLocation(program.handle, attributeName);
-
-        //careful with the stride!!!!
-        switch (attributeType)
-        {
-        case GL_FLOAT:
-            attributteByteSize = sizeof(float) * attributeSize;
-            usableAttributeType = GL_FLOAT;
-            usableAttributeSize = 1;
-            break;
-        case GL_FLOAT_VEC2:
-            attributteByteSize = sizeof(float) * 2 * attributeSize;
-            usableAttributeType = GL_FLOAT;
-            usableAttributeSize = 2;
-            break;
-        case GL_FLOAT_VEC3:
-            attributteByteSize = sizeof(float) * 3 * attributeSize;
-            usableAttributeType = GL_FLOAT;
-            usableAttributeSize = 3;
-            break;
-        case GL_FLOAT_MAT2:
-        case GL_FLOAT_VEC4:
-            attributteByteSize = sizeof(float) * 4 * attributeSize;
-            usableAttributeType = GL_FLOAT;
-            usableAttributeSize = 4;
-            break;
-        case GL_FLOAT_MAT3:
-            attributteByteSize = sizeof(float) * 9 * attributeSize;
-            usableAttributeType = GL_FLOAT;
-            usableAttributeSize = 9;
-            break;
-        case GL_FLOAT_MAT4:
-            attributteByteSize = sizeof(float) * 16 * attributeSize;
-            usableAttributeType = GL_FLOAT;
-            usableAttributeSize = 16;
-            break;
-        case GL_FLOAT_MAT2x3:
-        case GL_FLOAT_MAT3x2:
-            attributteByteSize = sizeof(float) * 6 * attributeSize;
-            usableAttributeType = GL_FLOAT;
-            usableAttributeSize = 6;
-            break;
-        case GL_FLOAT_MAT2x4:
-        case GL_FLOAT_MAT4x2:
-            attributteByteSize = sizeof(float) * 8 * attributeSize;
-            usableAttributeType = GL_FLOAT;
-            usableAttributeSize = 8;
-            break;
-        case GL_FLOAT_MAT3x4:
-        case GL_FLOAT_MAT4x3:
-            attributteByteSize = sizeof(float) * 12 * attributeSize;
-            usableAttributeType = GL_FLOAT;
-            usableAttributeSize = 12;
-            break;
-        case GL_INT:
-            attributteByteSize = sizeof(int) * attributeSize;
-            usableAttributeType = GL_INT;
-            usableAttributeSize = 1;
-            break;
-        case GL_INT_VEC2:
-            attributteByteSize = sizeof(int) * 2 * attributeSize;
-            usableAttributeType = GL_INT;
-            usableAttributeSize = 2;
-            break;
-        case GL_INT_VEC3:
-            attributteByteSize = sizeof(int) * 3 * attributeSize;
-            usableAttributeType = GL_INT;
-            usableAttributeSize = 3;
-            break;
-        case GL_INT_VEC4:
-            attributteByteSize = sizeof(int) * 4 * attributeSize;
-            usableAttributeType = GL_INT;
-            usableAttributeSize = 4;
-            break;
-        case GL_UNSIGNED_INT:
-            attributteByteSize = sizeof(unsigned int) * attributeSize;
-            usableAttributeType = GL_UNSIGNED_INT;
-            usableAttributeSize = 1;
-            break;
-        case GL_UNSIGNED_INT_VEC2:
-            attributteByteSize = sizeof(unsigned int) * 2 * attributeSize;
-            usableAttributeType = GL_UNSIGNED_INT;
-            usableAttributeSize = 2;
-            break;
-        case GL_UNSIGNED_INT_VEC3:
-            attributteByteSize = sizeof(unsigned int) * 3 * attributeSize;
-            usableAttributeType = GL_UNSIGNED_INT;
-            usableAttributeSize = 2;
-            break;
-        case GL_UNSIGNED_INT_VEC4:
-            attributteByteSize = sizeof(unsigned int) * 4 * attributeSize;
-            usableAttributeType = GL_UNSIGNED_INT;
-            usableAttributeSize = 4;
-            break;
-        case GL_DOUBLE:
-            attributteByteSize = sizeof(double) * attributeSize;
-            usableAttributeType = GL_DOUBLE;
-            usableAttributeSize = 1;
-            break;
-        case GL_DOUBLE_VEC2:
-            attributteByteSize = sizeof(double) * 2 * attributeSize;
-            usableAttributeType = GL_DOUBLE;
-            usableAttributeSize = 2;
-            break;
-        case GL_DOUBLE_VEC3:
-            attributteByteSize = sizeof(double) * 3 * attributeSize;
-            usableAttributeType = GL_DOUBLE;
-            usableAttributeSize = 3;
-            break;
-        case GL_DOUBLE_MAT2:
-        case GL_DOUBLE_VEC4:
-            attributteByteSize = sizeof(double) * 4 * attributeSize;
-            usableAttributeType = GL_DOUBLE;
-            usableAttributeSize = 4;
-            break;
-        case GL_DOUBLE_MAT3:
-            attributteByteSize = sizeof(double) * 9 * attributeSize;
-            usableAttributeType = GL_DOUBLE;
-            usableAttributeSize = 9;
-            break;
-        case GL_DOUBLE_MAT4:
-            attributteByteSize = sizeof(double) * 16 * attributeSize;
-            usableAttributeType = GL_DOUBLE;
-            usableAttributeSize = 16;
-            break;
-        case GL_DOUBLE_MAT2x3:
-        case GL_DOUBLE_MAT3x2:
-            attributteByteSize = sizeof(double) * 6 * attributeSize;
-            usableAttributeType = GL_DOUBLE;
-            usableAttributeSize = 6;
-            break;
-        case GL_DOUBLE_MAT2x4:
-        case GL_DOUBLE_MAT4x2:
-            attributteByteSize = sizeof(double) * 8 * attributeSize;
-            usableAttributeType = GL_DOUBLE;
-            usableAttributeSize = 8;
-            break;
-        case GL_DOUBLE_MAT3x4:
-        case GL_DOUBLE_MAT4x3:
-            attributteByteSize = sizeof(double) * 12 * attributeSize;
-            usableAttributeType = GL_DOUBLE;
-            usableAttributeSize = 12;
-            break;
-        default:
-            //TODO: what if we fail???
-            ELOG("Error: Unknown type of program attribute");
-        }
-        //TODO: stride
-        //glVertexAttribPointer(attributeLocation, usableAttributeSize, usableAttributeType, GL_FALSE, sizeof(float) * 5, ((void*)offset));
-        offset += attributteByteSize;
-        //glEnableVertexAttribArray(i);
-
-        //location + component count
-        program.vertexInputLayout.attributes.push_back({ (u8)attributeLocation,(u8)usableAttributeSize });
-    }
-    delete[] attributeName;
-}
-
-u32 LoadPatrik(App* app)
-{
-    u32 modelAppIdx = LoadModel(app, "Patrick/Patrick.obj");
-    app->patrickProgramIdx = LoadProgram(app, "shaders2.glsl", "TEXTURED_PATRICE");
-
-    Program& program = app->programs[app->patrickProgramIdx];
-    app->patrickProgramUniform = glGetUniformLocation(program.handle, "uTexture");
-
-
-    LoadProgramAttributes(program);
-
-    app->mode = Mode_Patrick;
-
-    return modelAppIdx;
 }
 
 glm::mat4 TransformScale(const glm::vec3& scaleFactors)
@@ -950,19 +938,18 @@ void Init(App* app)
     app->framebufferHandle = GenerateFrameBuffer(app);
 
     app->geometryPassIdx = LoadProgram(app, "GeometryPass.glsl", "GEO_PASS");
-    LoadProgramAttributes(app->programs[app->geometryPassIdx]);
+    app->normGeoPassIdx = LoadProgram(app, "NormGeometryPass.glsl", "NORM_GEO_PASS");
     app->directionalLightIdx = LoadProgram(app, "DirectionalLight.glsl", "DIRECTIONAL_LIGHT");
-    LoadProgramAttributes(app->programs[app->directionalLightIdx]);
     app->pointLightIdx = LoadProgram(app, "PointLight.glsl", "POINT_LIGHT");
-    LoadProgramAttributes(app->programs[app->pointLightIdx]);
     app->noFragmentIdx = LoadProgram(app, "NoFragment.glsl", "NO_FRAGMENT");
-    LoadProgramAttributes(app->programs[app->noFragmentIdx]);
     app->shadowCubemapIdx = LoadProgram(app, "ShadowCubemap.glsl", "SHADOW_CUBEMAP", true);
-    LoadProgramAttributes(app->programs[app->shadowCubemapIdx]);
 
     //for the screen quad
     LoadTexturesQuad(app);
-    app->patrickModelIdx = LoadPatrik(app);
+    app->patrickModelIdx = LoadModel(app, "Patrick/Patrick.obj");
+    app->rockModelIdx = LoadModel(app, "Rocks/Models/rock1.fbx");
+    app->sphereModelIdx = CreateSphere(app);
+    app->planeModelIdx = CreatePlane(app);
 
     app->cbuffer.head = 0;
     app->cbuffer.data = nullptr;
@@ -991,23 +978,21 @@ void Init(App* app)
         one.localParamsSize = 0;
         one.name = "Patrick " + std::to_string(i);
         app->entities.push_back(one);
-
+    
         x += 3;
         z -= 3;
     }
-    Entity extraPatrick = {};
-    extraPatrick.pos = vec3(7.65f, 4.7f, 0.0);
-    extraPatrick.rot = vec3(0.f);
-    extraPatrick.scale = vec3(0.45f);
-    extraPatrick.worldMatrix = TransformPositionScale(extraPatrick.pos, extraPatrick.scale);
-    extraPatrick.modelIndex = app->patrickModelIdx;
-    extraPatrick.localParamsOffset = 0;
-    extraPatrick.localParamsSize = 0;
-    extraPatrick.name = "Patrick " + std::to_string(3);
-    app->entities.push_back(extraPatrick);
-
-    app->sphereModelIdx = CreateSphere(app);
-    app->planeModelIdx = CreatePlane(app);
+    
+    Entity rock = {};
+    rock.pos = vec3(6.f,0.f,0.f);
+    rock.rot = vec3(0.f);
+    rock.scale = vec3(0.45f);
+    rock.worldMatrix = TransformPositionScale(rock.pos, rock.scale);
+    rock.modelIndex = app->rockModelIdx;
+    rock.localParamsOffset = 0;
+    rock.localParamsSize = 0;
+    rock.name = "Rock " + std::to_string(app->entities.size());
+    app->entities.push_back(rock);
 
     Entity plane = {};
     plane.pos = vec3(0.f, 0.f, 0.f);
@@ -1032,6 +1017,8 @@ void Init(App* app)
 
     glEnable(GL_CULL_FACE);
     glCullFace(GL_BACK);
+
+    app->mode = Mode::Mode_Patrick;
 }
 
 void Gui(App* app)
@@ -1171,8 +1158,8 @@ GLuint FindVAO(Mesh& mesh, u32 submeshIndex, const Program& program) {
 
 void RenderEntities(App* app)
 {
-    Program& textureMeshProgram = app->programs[app->geometryPassIdx];
-    glUseProgram(textureMeshProgram.handle);
+    Program* textureMeshProgram = &app->programs[app->geometryPassIdx];
+    glUseProgram(textureMeshProgram->handle);
     for (Entity entity : app->entities)
     {
         //binding local uniform buffer params
@@ -1180,15 +1167,27 @@ void RenderEntities(App* app)
         Model& model = app->models[entity.modelIndex];
         Mesh& mesh = app->meshes[model.meshIdx];
         for (u32 i = 0; i < mesh.submeshes.size(); ++i) {
-            GLuint vao = FindVAO(mesh, i, textureMeshProgram);
-            glBindVertexArray(vao);
             u32 submeshMaterialIdx = model.materialIdx[i];
             Material& submeshMaterial = app->materials[submeshMaterialIdx];
+            if (submeshMaterial.normalsTextureIdx != 0) {
+                textureMeshProgram = &app->programs[app->normGeoPassIdx];
+                glUseProgram(textureMeshProgram->handle);
+                glUniform1i(glGetUniformLocation(textureMeshProgram->handle, "normalMap"), 1);
+                glActiveTexture(GL_TEXTURE1);
+                glBindTexture(GL_TEXTURE_2D, app->textures[submeshMaterial.normalsTextureIdx].handle);
+            }
+            glUniform1i(glGetUniformLocation(textureMeshProgram->handle, "uTexture"), 0);
             glActiveTexture(GL_TEXTURE0);
             glBindTexture(GL_TEXTURE_2D, app->textures[submeshMaterial.albedoTextureIdx].handle);
 
+            GLuint vao = FindVAO(mesh, i, *textureMeshProgram);
+            glBindVertexArray(vao);
+
             Submesh& submesh = mesh.submeshes[i];
             glDrawElements(GL_TRIANGLES, submesh.indices.size(), GL_UNSIGNED_INT, (void*)(u64)submesh.indexOffset);
+            //TODO: arreglar aquest canvi de shader cada cop
+            textureMeshProgram = &app->programs[app->geometryPassIdx];
+            glUseProgram(textureMeshProgram->handle);
         }
     }
 }

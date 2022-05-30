@@ -188,11 +188,13 @@ struct App
     u32 sphereModelIdx;
     u32 planeModelIdx;
     u32 patrickModelIdx;
+    u32 rockModelIdx;
 
     // program indices
     u32 texturedGeometryProgramIdx;
-    u32 patrickProgramIdx;
+    //u32 patrickProgramIdx;
     u32 geometryPassIdx;
+    u32 normGeoPassIdx;
     u32 directionalLightIdx;
     u32 pointLightIdx;
     u32 noFragmentIdx;
@@ -215,7 +217,6 @@ struct App
 
     // Location of the texture uniform in the textured quad shader
     GLuint programUniformTexture;
-    GLuint patrickProgramUniform;
     int uniformBlockAlignment;
     u32 cameraParamsOffset;
     u32 cameraParamsSize;

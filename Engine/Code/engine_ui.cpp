@@ -206,6 +206,19 @@ void EntitiesSetings(App* app)
             patrick.name = "Patrick " + std::to_string(app->entities.size());
             app->entities.push_back(patrick);
         }
+        if (ImGui::Button("Add Rock"))
+        {
+            Entity rock = {};
+            rock.pos = vec3(0.f,2.f,0.f);
+            rock.rot = vec3(0.f);
+            rock.scale = vec3(0.45f);
+            rock.worldMatrix = TransformPositionScale(rock.pos, rock.scale);
+            rock.modelIndex = app->rockModelIdx;
+            rock.localParamsOffset = 0;
+            rock.localParamsSize = 0;
+            rock.name = "Rock " + std::to_string(app->entities.size());
+            app->entities.push_back(rock);
+        }
         if (ImGui::Button("Add Plane"))
         {
             Entity plane = {};

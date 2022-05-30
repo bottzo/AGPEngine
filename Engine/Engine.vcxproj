@@ -56,6 +56,7 @@
     <None Include="WorkingDir\DirectionalLight.glsl" />
     <None Include="WorkingDir\GeometryPass.glsl" />
     <None Include="WorkingDir\NoFragment.glsl" />
+    <None Include="WorkingDir\NormGeometryPass.glsl" />
     <None Include="WorkingDir\PointLight.glsl" />
     <None Include="WorkingDir\shaders.glsl" />
     <None Include="WorkingDir\shaders2.glsl" />
