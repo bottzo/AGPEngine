@@ -1029,6 +1029,8 @@ void Gui(App* app)
     ImGui::Begin("Info");
     ImGui::Separator();
     ImGui::Text("FPS: %f", 1.0f / app->deltaTime);
+    ImGui::Separator();
+    ImGui::Checkbox("Use normal maps", &app->useNormalMap);
     SelectFrameBufferTexture(app);
     CameraSettings(app);
     LightsSettings(app);
@@ -1169,7 +1171,7 @@ void RenderEntities(App* app)
         for (u32 i = 0; i < mesh.submeshes.size(); ++i) {
             u32 submeshMaterialIdx = model.materialIdx[i];
             Material& submeshMaterial = app->materials[submeshMaterialIdx];
-            if (submeshMaterial.normalsTextureIdx != 0) {
+            if (submeshMaterial.normalsTextureIdx != 0 && app->useNormalMap) {
                 textureMeshProgram = &app->programs[app->normGeoPassIdx];
                 glUseProgram(textureMeshProgram->handle);
                 glUniform1i(glGetUniformLocation(textureMeshProgram->handle, "normalMap"), 1);

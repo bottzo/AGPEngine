@@ -247,6 +247,9 @@ struct App
     glm::vec3 cameraRot = glm::vec3(30.f,180.f,0.f);
     float zNear = 0.1f;
     float zFar = 500.f;
+
+    //Debugging
+    bool useNormalMap = true;
 };
 
 void Init(App* app);
