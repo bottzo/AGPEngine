@@ -84,7 +84,7 @@ void main()
 	float attenuation = 1.0 / (constant + linear*distance + quadratic*distance*distance);
 
 	vec3 lDir = normalize(uLight.pos - position);//lNormal;
-	float intensity = max(dot(normals, lDir),0.0) * abs(attenuation);
+	float intensity = max(dot(normals, lDir),0.0) * attenuation;
 	vec3 difCol = uLight.color * intensity;
 
 	//specular
