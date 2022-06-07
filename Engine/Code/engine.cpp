@@ -1062,8 +1062,8 @@ void Init(App* app)
     app->lights.push_back({ vec3(0.239f,0.f,1.f), GetAttenuationValuesFromRange(radius), radius , LightType::LightType_Point, TransformPositionScale(vec3(0.75f, 3.f, -8.15f), vec3(radius)), app->sphereModelIdx, 0, 0, 0, 0, vec3(0.75f, 3.f, -8.15f) });
     radius = 66.f;
     app->lights.push_back({ vec3(0.976f,0.f,0.f), GetAttenuationValuesFromRange(radius), radius , LightType::LightType_Point, TransformPositionScale(vec3(0.75f, 3.f, -2.65f), vec3(radius)), app->sphereModelIdx, 0, 0, 0, 0, vec3(0.75f, 3.f, -2.65f) });
-    //radius = 49.f;
-    //app->lights.push_back({ vec3(1.f,1.f,1.f), GetAttenuationValuesFromRange(radius), radius , LightType::LightType_Point, TransformPositionScale(vec3(0.f, 3.f, -0.95f), vec3(radius)), app->sphereModelIdx, 0, 0, 0, 0, vec3(0.f, 3.f, -0.95f) });
+    radius = 49.f;
+    app->lights.push_back({ vec3(1.f,1.f,1.f), GetAttenuationValuesFromRange(radius), radius , LightType::LightType_Point, TransformPositionScale(vec3(0.f, 3.f, -0.95f), vec3(radius)), app->sphereModelIdx, 0, 0, 0, 0, vec3(0.f, 3.f, -0.95f) });
 
 
     glEnable(GL_CULL_FACE);
