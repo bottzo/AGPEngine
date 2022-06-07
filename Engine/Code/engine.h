@@ -186,15 +186,18 @@ struct App
 
     //Model indices
     u32 sphereModelIdx;
+    u32 wallModelIdx;
     u32 planeModelIdx;
     u32 patrickModelIdx;
     u32 rockModelIdx;
+    u32 cyborgModelIdx;
 
     // program indices
     u32 texturedGeometryProgramIdx;
     //u32 patrickProgramIdx;
     u32 geometryPassIdx;
     u32 normGeoPassIdx;
+    u32 relGeoPassIdx;
     u32 directionalLightIdx;
     u32 pointLightIdx;
     u32 noFragmentIdx;
@@ -243,13 +246,14 @@ struct App
     GLuint shadowPointDepthAttachmentHandle = 0;
 
     //Camera Settings
-    glm::vec3 cameraPos = glm::vec3(1.2f, 4.75f, 5.35f);
-    glm::vec3 cameraRot = glm::vec3(30.f,180.f,0.f);
+    glm::vec3 cameraPos = glm::vec3(1.2f, 7.550f, 7.550f);
+    glm::vec3 cameraRot = glm::vec3(38.5f,180.f,0.f);
     float zNear = 0.1f;
     float zFar = 500.f;
 
     //Debugging
     bool useNormalMap = true;
+    bool useRelifMap = true;
 };
 
 void Init(App* app);

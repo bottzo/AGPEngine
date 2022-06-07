@@ -411,7 +411,7 @@ u32 CreateSphere(App* app)
     VertexBufferLayout vertexFormat;
     vertexFormat.attributes.push_back({ 0,3,0 });
     vertexFormat.attributes.push_back({ 1,3, 3 * sizeof(float) });
-    vertexFormat.attributes.push_back(VertexBufferAttribute{ 2, 2, 2*sizeof(float) });
+    vertexFormat.attributes.push_back(VertexBufferAttribute{ 2, 2, 6*sizeof(float) });
     vertexFormat.stride = 8 * sizeof(float);
     subMesh.vertexBufferLayout = vertexFormat;
     subMesh.vertices.reserve(32 * 16 * 8);
@@ -473,16 +473,17 @@ u32 CreateSphere(App* app)
     mat.albedoTextureIdx = app->magentaTexIdx;
     app->materials.push_back(mat);
     model.materialIdx.push_back(app->materials.size() - 1);
+
     return modelIdx;
 }
 
-u32 CreatePlane(App* app)
+u32 CreateWall(App* app)
 {
     const float vertices[] = {
-    -1,-1,0.0,  0,0,1,  0.0,0.0,
-    1,-1,0.0,   0,0,1,  1.0,0.0,
-    1,1,0.0,    0,0,1,  1.0,1.0,
-    -1,1,0.0,   0,0,1,  0.0,1.0
+    -1,1,0,  0,0,1,  0.0,1.0, 1,0,0, 0,1,0,
+    -1,-1,0, 0,0,1,  0.0,0.0, 1,0,0, 0,1,0,
+    1,-1,0,  0,0,1,  1.0,0.0, 1,0,0, 0,1,0,
+    1,1,0,   0,0,1,  1.0,1.0, 1,0,0, 0,1,0
     };
 
     const unsigned short indices[] = {
@@ -501,8 +502,10 @@ u32 CreatePlane(App* app)
     VertexBufferLayout vertexFormat;
     vertexFormat.attributes.push_back({ 0,3,0 });
     vertexFormat.attributes.push_back({ 1,3, 3 * sizeof(float) });
-    vertexFormat.attributes.push_back(VertexBufferAttribute{ 2, 2, 2 * sizeof(float) });
-    vertexFormat.stride = 8 * sizeof(float);
+    vertexFormat.attributes.push_back(VertexBufferAttribute{ 2, 2, 6 * sizeof(float) });
+    vertexFormat.attributes.push_back(VertexBufferAttribute{ 3, 3, 8 * sizeof(float) });
+    vertexFormat.attributes.push_back(VertexBufferAttribute{ 4, 3, 11 * sizeof(float) });
+    vertexFormat.stride = 14 * sizeof(float);
     subMesh.vertexBufferLayout = vertexFormat;
     const unsigned int vertexCount = sizeof(vertices) / sizeof(float);
     subMesh.vertices.reserve(vertexCount);
@@ -522,10 +525,23 @@ u32 CreatePlane(App* app)
     glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, mesh.indexBufferHandle);
     glBufferData(GL_ELEMENT_ARRAY_BUFFER, subMesh.indices.size() * sizeof(u32), subMesh.indices.data(), GL_STATIC_DRAW);
 
+    app->materials.push_back(Material{});
+    Material& material = app->materials.back();
+    material.albedoTextureIdx = LoadTexture2D(app, "diffuse.png");
+    material.normalsTextureIdx = LoadTexture2D(app, "normal.png");
+    material.bumpTextureIdx = LoadTexture2D(app, "displacement.png");
+    model.materialIdx.push_back(app->materials.size() - 1);
+
+    Mesh planeMesh = mesh;
+    Model plane = model;
     Material mat = {};
     mat.albedoTextureIdx = app->whiteTexIdx;
     app->materials.push_back(mat);
-    model.materialIdx.push_back(app->materials.size() - 1);
+    plane.materialIdx.back() = (app->materials.size() - 1);
+    app->meshes.push_back(planeMesh);
+    app->models.push_back(plane);
+    app->planeModelIdx = app->models.size() - 1;
+
     return modelIdx;
 }
 
@@ -939,6 +955,7 @@ void Init(App* app)
 
     app->geometryPassIdx = LoadProgram(app, "GeometryPass.glsl", "GEO_PASS");
     app->normGeoPassIdx = LoadProgram(app, "NormGeometryPass.glsl", "NORM_GEO_PASS");
+    app->relGeoPassIdx = LoadProgram(app, "RelifGeometryPass.glsl", "REL_GEO_PASS");
     app->directionalLightIdx = LoadProgram(app, "DirectionalLight.glsl", "DIRECTIONAL_LIGHT");
     app->pointLightIdx = LoadProgram(app, "PointLight.glsl", "POINT_LIGHT");
     app->noFragmentIdx = LoadProgram(app, "NoFragment.glsl", "NO_FRAGMENT");
@@ -948,8 +965,9 @@ void Init(App* app)
     LoadTexturesQuad(app);
     app->patrickModelIdx = LoadModel(app, "Patrick/Patrick.obj");
     app->rockModelIdx = LoadModel(app, "Rocks/Models/rock1.fbx");
+    app->cyborgModelIdx = LoadModel(app, "Rocks/cyborg.fbx");
     app->sphereModelIdx = CreateSphere(app);
-    app->planeModelIdx = CreatePlane(app);
+    app->wallModelIdx = CreateWall(app);
 
     app->cbuffer.head = 0;
     app->cbuffer.data = nullptr;
@@ -993,7 +1011,7 @@ void Init(App* app)
     rock.localParamsSize = 0;
     rock.name = "Rock " + std::to_string(app->entities.size());
     app->entities.push_back(rock);
-
+    
     Entity plane = {};
     plane.pos = vec3(0.f, 0.f, 0.f);
     plane.rot = vec3(0.f);
@@ -1005,15 +1023,48 @@ void Init(App* app)
     plane.localParamsSize = 0;
     plane.name = "Plane " + std::to_string(app->models.size() - 1);
     app->entities.push_back(plane);
+
+    Entity plane2 = {};
+    plane2.pos = vec3(0.f, 1.5f, 0.f);
+    plane2.rot = vec3(0.f);
+    plane2.scale = vec3(3.f,1.5f,2.f);
+    plane2.worldMatrix = TransformPositionScale(plane2.pos, plane2.scale);
+    plane2.worldMatrix = glm::rotate(plane2.worldMatrix, 0 * DEGTORAD, glm::vec3(1.f, 0.f, 0.f));
+    plane2.modelIndex = app->wallModelIdx;
+    plane2.localParamsOffset = 0;
+    plane2.localParamsSize = 0;
+    plane2.name = "wall " + std::to_string(app->models.size() - 1);
+    app->entities.push_back(plane2);
+
+    Entity cyborg = {};
+    cyborg.pos = vec3(0.f, 0.f, 0.5f);
+    cyborg.rot = vec3(0.f);
+    cyborg.scale = vec3(1.f);
+    cyborg.worldMatrix = TransformPositionScale(cyborg.pos, cyborg.scale);
+    cyborg.modelIndex = app->cyborgModelIdx;
+    cyborg.localParamsOffset = 0;
+    cyborg.localParamsSize = 0;
+    cyborg.name = "Cyborg " + std::to_string(app->entities.size());
+    app->entities.push_back(cyborg);
     
     //loading lights
     //app->lights.push_back({vec3(1,1,1), vec3(1,-1,-1), vec3(0,0,0), LightType_Directional });
     //TODO: Load screen filling quad model to models for the directional
-    float radius = 103.f;
-    app->lights.push_back({ vec3(0.1569f,0.651f,0.8039f), GetAttenuationValuesFromRange(radius), radius , LightType::LightType_Point, TransformPositionScale(vec3(0.3f, 3.f, 0.f), vec3(radius)), app->sphereModelIdx, 0, 0, 0, 0, vec3(0.3f, 3.f, 0.f) });
-    radius = 35.f;
-    app->lights.push_back({ vec3(1.f,1.f,1.f), GetAttenuationValuesFromRange(radius), radius , LightType::LightType_Point, TransformPositionScale(vec3(0.75f, 3.f, -4.3f), vec3(radius)), app->sphereModelIdx, 0, 0, 0, 0, vec3(0.75f, 3.f, -4.3f) });
+    //float radius = 103.f;
+    //app->lights.push_back({ vec3(0.1569f,0.651f,0.8039f), GetAttenuationValuesFromRange(radius), radius , LightType::LightType_Point, TransformPositionScale(vec3(0.3f, 3.f, 0.f), vec3(radius)), app->sphereModelIdx, 0, 0, 0, 0, vec3(0.3f, 3.f, 0.f) });
+    //radius = 35.f;
+    //app->lights.push_back({ vec3(1.f,1.f,1.f), GetAttenuationValuesFromRange(radius), radius , LightType::LightType_Point, TransformPositionScale(vec3(0.75f, 3.f, -4.3f), vec3(radius)), app->sphereModelIdx, 0, 0, 0, 0, vec3(0.75f, 3.f, -4.3f) });
     //app->lights.push_back({ vec3(1,1,1), vec3(1,1,1), radius , LightType::LightType_Directional, TransformScale(vec3(1.f)), app->sphereModelIdx, 0, 0, 0, 0 });
+   
+    float radius = 77.f;
+    app->lights.push_back({ vec3(0.878f,0.878f,0.f), GetAttenuationValuesFromRange(radius), radius , LightType::LightType_Point, TransformPositionScale(vec3(-2.2f, 3.f, 1.4f), vec3(radius)), app->sphereModelIdx, 0, 0, 0, 0, vec3(-2.2f, 3.f, 1.4f) });
+    radius = 79.f;
+    app->lights.push_back({ vec3(0.239f,0.f,1.f), GetAttenuationValuesFromRange(radius), radius , LightType::LightType_Point, TransformPositionScale(vec3(0.75f, 3.f, -8.15f), vec3(radius)), app->sphereModelIdx, 0, 0, 0, 0, vec3(0.75f, 3.f, -8.15f) });
+    radius = 66.f;
+    app->lights.push_back({ vec3(0.976f,0.f,0.f), GetAttenuationValuesFromRange(radius), radius , LightType::LightType_Point, TransformPositionScale(vec3(0.75f, 3.f, -2.65f), vec3(radius)), app->sphereModelIdx, 0, 0, 0, 0, vec3(0.75f, 3.f, -2.65f) });
+    radius = 49.f;
+    app->lights.push_back({ vec3(1.f,1.f,1.f), GetAttenuationValuesFromRange(radius), radius , LightType::LightType_Point, TransformPositionScale(vec3(0.f, 3.f, -0.95f), vec3(radius)), app->sphereModelIdx, 0, 0, 0, 0, vec3(0.f, 3.f, -0.95f) });
+
 
     glEnable(GL_CULL_FACE);
     glCullFace(GL_BACK);
@@ -1031,6 +1082,7 @@ void Gui(App* app)
     ImGui::Text("FPS: %f", 1.0f / app->deltaTime);
     ImGui::Separator();
     ImGui::Checkbox("Use normal maps", &app->useNormalMap);
+    ImGui::Checkbox("Use relif maps", &app->useRelifMap);
     SelectFrameBufferTexture(app);
     CameraSettings(app);
     LightsSettings(app);
@@ -1172,11 +1224,20 @@ void RenderEntities(App* app)
             u32 submeshMaterialIdx = model.materialIdx[i];
             Material& submeshMaterial = app->materials[submeshMaterialIdx];
             if (submeshMaterial.normalsTextureIdx != 0 && app->useNormalMap) {
-                textureMeshProgram = &app->programs[app->normGeoPassIdx];
+                if(submeshMaterial.bumpTextureIdx != 0 && app->useRelifMap)
+                    textureMeshProgram = &app->programs[app->relGeoPassIdx];
+                else
+                    textureMeshProgram = &app->programs[app->normGeoPassIdx];
                 glUseProgram(textureMeshProgram->handle);
                 glUniform1i(glGetUniformLocation(textureMeshProgram->handle, "normalMap"), 1);
                 glActiveTexture(GL_TEXTURE1);
                 glBindTexture(GL_TEXTURE_2D, app->textures[submeshMaterial.normalsTextureIdx].handle);
+                if (submeshMaterial.bumpTextureIdx != 0 && app->useRelifMap)
+                {
+                    glUniform1i(glGetUniformLocation(textureMeshProgram->handle, "heightMap"), 2);
+                    glActiveTexture(GL_TEXTURE2);
+                    glBindTexture(GL_TEXTURE_2D, app->textures[submeshMaterial.bumpTextureIdx].handle);
+                }
             }
             glUniform1i(glGetUniformLocation(textureMeshProgram->handle, "uTexture"), 0);
             glActiveTexture(GL_TEXTURE0);

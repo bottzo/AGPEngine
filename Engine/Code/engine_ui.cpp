@@ -226,7 +226,7 @@ void EntitiesSetings(App* app)
             plane.rot = vec3(0.f);
             plane.scale = vec3(1.f);
             plane.worldMatrix = TransformPositionScale(plane.pos, plane.scale);
-            plane.modelIndex = app->planeModelIdx;
+            plane.modelIndex = app->wallModelIdx;
             plane.localParamsOffset = 0;
             plane.localParamsSize = 0;
             plane.name = "Plane " + std::to_string(app->entities.size());

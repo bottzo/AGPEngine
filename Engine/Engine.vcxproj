@@ -58,6 +58,7 @@
     <None Include="WorkingDir\NoFragment.glsl" />
     <None Include="WorkingDir\NormGeometryPass.glsl" />
     <None Include="WorkingDir\PointLight.glsl" />
+    <None Include="WorkingDir\RelifGeometryPass.glsl" />
     <None Include="WorkingDir\shaders.glsl" />
     <None Include="WorkingDir\shaders2.glsl" />
     <None Include="WorkingDir\ShadowCubemap.glsl" />

@@ -82,6 +82,7 @@ void main()
 	nColor = vec4(vNormal,1.);
 	depth = vec4(vec3(LinearizeDepth(gl_FragCoord.z) / zFar),1.);
 	oColor = albedo;
+	//albedo = vec4(1.0,0.0,0.0,1.0);
 
 	vec3 T = normalize(tangentLocalSpace);
 	vec3 B = normalize(biTangentLocalSpace);

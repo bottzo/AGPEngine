@@ -136,5 +136,8 @@
     <None Include="WorkingDir\NormGeometryPass.glsl">
       <Filter>Shaders</Filter>
     </None>
+    <None Include="WorkingDir\RelifGeometryPass.glsl">
+      <Filter>Shaders</Filter>
+    </None>
   </ItemGroup>
 </Project>
