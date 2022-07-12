@@ -1,5 +1,5 @@
 # AGPEngine
- advanced grafics repo
+ advanced graphics repo
  
 Deferred shading
 
