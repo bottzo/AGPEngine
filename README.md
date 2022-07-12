@@ -1,7 +1,7 @@
 # AGPEngine
  advanced graphics repo
  
-Deferred shading
+OpenGL geometry viewer using deferred shading
 
 Techniques implemented:
 
